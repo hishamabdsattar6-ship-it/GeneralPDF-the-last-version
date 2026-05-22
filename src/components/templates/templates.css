@@ -1,0 +1,246 @@
+
+:root {
+  --tmpl-primary: #1a3a5c;
+  --tmpl-accent: #d4a017;
+  --tmpl-bg: #ffffff;
+  --tmpl-text: #1e293b;
+  --tmpl-muted: #64748b;
+  --tmpl-border: #e2e8f0;
+}
+
+.templates-page {
+  direction: rtl;
+  font-family: 'Tajawal', sans-serif;
+  color: var(--tmpl-text);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Gallery Styles */
+.gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.gallery-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: var(--tmpl-primary);
+  color: white;
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+}
+
+.template-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+  border: 1px solid var(--tmpl-border);
+}
+
+.template-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.card-thumb {
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  position: relative;
+}
+
+.card-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.card-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 4px 12px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 10px;
+  font-size: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.card-title {
+  font-family: 'Cairo', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--tmpl-muted);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+/* Editor Styles */
+.editor-container {
+  display: flex;
+  gap: 20px;
+  height: calc(100vh - 120px);
+  background: #f8fafc;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.editor-form-panel {
+  width: 38%;
+  background: white;
+  padding: 25px;
+  overflow-y: auto;
+  border-left: 1px solid var(--tmpl-border);
+}
+
+.editor-preview-panel {
+  flex-grow: 1;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #e2e8f0;
+  overflow-y: auto;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--tmpl-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.preview-frame-wrap {
+  background: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  transform-origin: top center;
+  margin-bottom: 20px;
+}
+
+.preview-frame {
+  width: 794px;
+  height: 1123px;
+  border: none;
+}
+
+/* Importer Styles */
+.importer-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  max-width: 800px;
+  margin: 40px auto;
+  border: 2px dashed var(--tmpl-border);
+}
+
+.drop-zone {
+  padding: 60px;
+  border-radius: 12px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.drop-zone:hover {
+  background: #f1f5f9;
+  border-color: var(--tmpl-primary);
+}
+
+/* Buttons */
+.btn-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: transparent;
+  border: none;
+  color: var(--tmpl-primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-export {
+  background: var(--tmpl-primary);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-export:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .editor-container {
+    flex-direction: column;
+    height: auto;
+  }
+  .editor-form-panel {
+    width: 100%;
+  }
+}

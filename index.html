@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>أدوات PDF الذكية | GeneralPDF</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script type="module" src="/src/main.tsx"></script>
+<style>
+  :root {
+    --bg: #f8fafc; --text: #0f172a; --muted: #64748b; --border: rgba(0,0,0,0.08);
+    --card: #ffffff; --blue: #2563eb; --blue-h: #1d4ed8; --header: rgba(255,255,255,0.8); --footer: transparent;
+  }
+  .dark {
+    --bg: #0f172a; --text: #f8fafc; --muted: #94a3b8; --border: rgba(255,255,255,0.1);
+    --card: rgba(255,255,255,0.05); --blue: #3b82f6; --blue-h: #60a5fa; --header: rgba(15,23,42,0.6); --footer: transparent;
+  }
+  .card, .drop-zone, .section-card, nav, header { backdrop-filter: blur(16px); }
+  .frosted-bg-1 { position: fixed; top: -100px; left: -100px; width: 400px; height: 400px; background: rgba(37, 99, 235, 0.2); border-radius: 50%; filter: blur(120px); z-index: -1; pointer-events: none; }
+  .frosted-bg-2 { position: fixed; bottom: -50px; right: -50px; width: 500px; height: 500px; background: rgba(147, 51, 234, 0.2); border-radius: 50%; filter: blur(150px); z-index: -1; pointer-events: none; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{background:var(--bg);color:var(--text);transition:background .3s;scroll-behavior:smooth}
+  body{font-family:'Tajawal','Cairo',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+  html[lang="en"] body{font-family:'Inter',sans-serif}
+  header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--header) 90%,transparent);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;flex-direction:row-reverse;gap:10px;box-shadow:0 1px 8px rgba(0,0,0,.05)}
+  .logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;margin-right:auto}
+  .logo-icon{width:36px;height:36px;border-radius:10px;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;box-shadow:0 3px 10px rgba(29,78,216,.3);transition:transform .2s}
+  .logo:hover .logo-icon{transform:scale(1.08)}
+  .logo-text{font-size:15px;font-weight:800;color:var(--blue)}
+  .header-btns{display:flex;gap:6px;flex-shrink:0;margin-left:auto}
+  .icon-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 11px;border-radius:10px;border:1px solid var(--border);background:var(--card);cursor:pointer;color:var(--muted);font-size:12px;font-weight:700;transition:background .2s,color .2s,border-color .2s;white-space:nowrap}
+  .icon-btn:hover{border-color:var(--blue);color:var(--blue)}
+  nav{position:relative;flex-shrink:0}
+  .nav-toggle{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;transition:border-color .2s,color .2s;white-space:nowrap}
+  .nav-toggle:hover,.nav-toggle.open{border-color:var(--blue);color:var(--blue)}
+  .nav-toggle .chevron{transition:transform .22s}
+  .nav-toggle.open .chevron{transform:rotate(180deg)}
+  .nav-dropdown{display:none;flex-direction:column;gap:2px;position:absolute;top:calc(100% + 8px);right:0;min-width:190px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.13);z-index:999}
+  .nav-dropdown.open{display:flex;animation:dropIn .18s ease}
+  @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .nav-link{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;cursor:pointer;border:none;background:transparent;transition:background .15s,color .15s;width:100%}
+  .nav-link:hover{background:rgba(29,78,216,.07);color:var(--blue)}
+  .nav-link.active{background:rgba(29,78,216,.1);color:var(--blue);font-weight:700}
+  main{flex:1;max-width:1100px;margin:0 auto;width:100%;padding:40px 20px}
+  .page{display:none;animation:fadeUp .4s ease}
+  .page.active{display:block}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .grid12{display:grid;grid-template-columns:repeat(12,1fr);gap:20px}
+  @media(max-width:900px){.grid3{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.grid3{grid-template-columns:1fr}.grid12{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,.04);transition:box-shadow .25s,border-color .25s,transform .25s;cursor:pointer;text-decoration:none;color:var(--text);display:flex;flex-direction:column}
+  .card:hover{box-shadow:0 8px 30px rgba(0,0,0,.10);border-color:#93c5fd;transform:translateY(-2px)}
+  .dark .card:hover{border-color:#1d4ed8}
+  .icon-box{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px;transition:transform .2s}
+  .card:hover .icon-box{transform:scale(1.12)}
+  .card h3{font-size:17px;font-weight:800;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:13px;line-height:1.6;flex:1}
+  .hero-banner{background:var(--blue);border-radius:22px;padding:40px 36px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;grid-column:span 8;box-shadow:0 10px 40px rgba(29,78,216,.3)}
+  .hero-banner h2{font-size:26px;font-weight:800;color:#fff;margin-bottom:12px}
+  .hero-banner p{color:#bfdbfe;font-size:14px;line-height:1.7;margin-bottom:24px;max-width:420px}
+  .btn-white{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--blue);padding:12px 28px;border-radius:14px;font-weight:800;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:background .2s,transform .15s;align-self:flex-start}
+  .btn-white:hover{background:#f1f5f9;transform:scale(1.03)}
+  .hero-blob{position:absolute;left:-30px;top:-30px;opacity:0.07;width:300px;height:300px;pointer-events:none}
+  .stats-col{grid-column:span 4;display:flex;flex-direction:column;gap:16px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;text-align:center;flex:1;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+  .stat-num{font-size:30px;font-weight:900;color:var(--blue)}
+  .stat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+  .tool-page{max-width:800px;margin:0 auto}
+  .tool-header{text-align:center;margin-bottom:32px}
+  .tool-icon-lg{width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px}
+  .tool-header h1{font-size:28px;font-weight:900;color:var(--blue);margin-bottom:8px}
+  .tool-header p{color:var(--muted);font-size:15px}
+  .drop-zone{border:2px dashed var(--border);border-radius:18px;padding:50px 30px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--card)}
+  .drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue);background:rgba(29,78,216,.04)}
+  .drop-icon{font-size:40px;margin-bottom:12px}
+  .drop-zone h3{font-size:16px;font-weight:700;margin-bottom:6px}
+  .drop-zone p{color:var(--muted);font-size:13px}
+  .drop-zone input{display:none}
+  .file-list{margin-top:20px;display:flex;flex-direction:column;gap:10px}
+  .file-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px}
+  .file-info{display:flex;align-items:center;gap:10px;overflow:hidden}
+  .file-icon{font-size:20px;flex-shrink:0}
+  .file-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-size{font-size:11px;color:var(--muted)}
+  .remove-btn{background:none;border:none;cursor:pointer;color:#ef4444;padding:4px;border-radius:6px;font-size:16px;transition:background .2s}
+  .remove-btn:hover{background:rgba(239,68,68,.1)}
+  .btn-primary{padding:13px 30px;background:var(--blue);color:#fff;border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:8px;font-family:inherit}
+  .btn-primary:hover{background:var(--blue-h)}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-secondary{padding:13px 30px;background:var(--border);color:var(--text);border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer;transition:background .2s;display:inline-flex;align-items:center;gap:8px;font-family:inherit}
+  .btn-secondary:hover{background:#cbd5e1}
+  .dark .btn-secondary{background:#1e293b}
+  .dark .btn-secondary:hover{background:#334155}
+  .btn-success{padding:13px 30px;background:#16a34a;color:#fff;border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer;transition:background .2s;display:inline-flex;align-items:center;gap:8px;font-family:inherit}
+  .btn-success:hover{background:#15803d}
+
+  .btn-ai{
+    padding:13px 24px;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6,#a855f7);
+    color:#fff;border:none;border-radius:14px;font-weight:800;font-size:14px;
+    cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-family:inherit;
+    box-shadow:0 4px 20px rgba(139,92,246,.4);
+    transition:all .2s;position:relative;overflow:hidden;
+  }
+  .btn-ai::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,#818cf8,#a78bfa,#c084fc);
+    opacity:0;transition:opacity .2s;
+  }
+  .btn-ai:hover::before{opacity:1}
+  .btn-ai:hover{transform:translateY(-1px);box-shadow:0 6px 25px rgba(139,92,246,.5)}
+  .btn-ai:disabled{opacity:.6;cursor:not-allowed;transform:none}
+  .btn-ai span{position:relative;z-index:1}
+  .btn-ai-icon{font-size:16px;position:relative;z-index:1}
+
+  .action-row{display:flex;gap:12px;justify-content:flex-end;padding-top:16px;flex-wrap:wrap}
+  .success-box{background:var(--card);border:1px solid #86efac;border-radius:20px;padding:48px 30px;text-align:center;animation:fadeUp .4s ease}
+  .dark .success-box{border-color:#166534}
+  .success-icon{font-size:60px;margin-bottom:16px}
+  .success-box h2{font-size:22px;font-weight:800;margin-bottom:24px}
+  .success-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .section-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;margin-top:16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+  .section-card h3{font-size:16px;font-weight:800;margin-bottom:16px}
+  input[type="range"]{width:100%;accent-color:var(--blue)}
+  label{font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px}
+  select,input[type="text"],input[type="number"],textarea{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}
+  select:focus,input[type="text"]:focus,input[type="number"]:focus,textarea:focus{border-color:var(--blue)}
+  .dark select,.dark input[type="text"],.dark input[type="number"],.dark textarea{background:#0f172a}
+  textarea{resize:vertical;min-height:120px;line-height:1.6}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:600px){.form-row{grid-template-columns:1fr}}
+  .form-group{margin-bottom:16px}
+  .page-title{margin-bottom:32px}
+  .page-title h1{font-size:32px;font-weight:900;color:var(--blue);margin-bottom:8px}
+  .page-title p{color:var(--muted);font-size:15px}
+  .text-center{text-align:center}
+  .ai-badge{display:inline-block;background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+  .dark .ai-badge{background:rgba(29,78,216,.2);color:#93c5fd}
+  footer{background:var(--footer);border-top:1px solid var(--border);padding:20px;text-align:center;color:var(--muted);font-size:12px;font-weight:600}
+  .spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-state{text-align:center;padding:60px;color:var(--muted)}
+  .progress-bar-wrap{background:var(--border);border-radius:20px;height:8px;overflow:hidden;margin-top:8px}
+  .progress-bar-inner{height:100%;background:var(--blue);border-radius:20px;transition:width .3s}
+  .info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 18px;font-size:13px;color:#1e40af;margin-bottom:16px}
+  .dark .info-box{background:rgba(29,78,216,.1);border-color:rgba(29,78,216,.3);color:#93c5fd}
+  .thumb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+  .thumb-card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:10px;text-align:center;cursor:grab;transition:border-color .2s,transform .2s;position:relative}
+  .thumb-card:hover{border-color:var(--blue);transform:scale(1.04)}
+  .thumb-num{font-size:12px;font-weight:700;color:var(--muted);margin-top:6px}
+  .thumb-placeholder{width:100%;aspect-ratio:3/4;background:linear-gradient(135deg,#e0e7ff,#f0f9ff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px}
+  #sig-canvas{border:2px solid var(--border);border-radius:12px;cursor:crosshair;background:#fff;display:block;width:100%}
+  .enc-badge{display:inline-flex;align-items:center;gap:6px;background:#0f172a;color:#22c55e;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:monospace;border:1px solid #16a34a;margin-bottom:16px}
+  .strength-bar-wrap{display:flex;gap:4px;margin-top:6px}
+  .strength-seg{height:6px;flex:1;border-radius:3px;background:var(--border);transition:background .3s}
+  #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:#0f172a;color:#f8fafc;padding:12px 24px;border-radius:14px;font-size:13px;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,.3);z-index:9999;transition:transform .3s;white-space:nowrap}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  .modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal-box{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:32px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:slideUp .25s ease}
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-icon{font-size:40px;text-align:center;margin-bottom:12px}
+  .modal-title{font-size:20px;font-weight:900;color:var(--blue);text-align:center;margin-bottom:6px}
+  .modal-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px;line-height:1.6}
+  .modal-input-wrap{position:relative;margin-bottom:14px}
+  .modal-input-wrap input{width:100%;padding:12px 44px 12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:13px;font-family:monospace;outline:none;transition:border-color .2s}
+  .modal-input-wrap input:focus{border-color:var(--blue)}
+  .modal-eye{position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px}
+  .modal-btns{display:flex;gap:10px}
+  .modal-btns .btn-primary{flex:1;justify-content:center}
+  .modal-btns .btn-secondary{padding:13px 18px}
+  .modal-link{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
+  .modal-link a{color:var(--blue);text-decoration:none}
+  .modal-link a:hover{text-decoration:underline}
+  .ai-result-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:16px;white-space:pre-wrap;font-size:14px;line-height:1.8;max-height:400px;overflow-y:auto}
+  .ai-loading{text-align:center;padding:40px;color:var(--muted)}
+  .ai-loading .spinner{margin-bottom:12px}
+  .chat-messages{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:16px;height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+  .chat-msg{max-width:80%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.6}
+  .chat-msg.user{background:var(--blue);color:#fff;align-self:flex-end;border-radius:14px 14px 4px 14px}
+  .chat-msg.ai{background:var(--card);border:1px solid var(--border);align-self:flex-start;border-radius:14px 14px 14px 4px}
+  .chat-input-row{display:flex;gap:8px}
+  .chat-input-row input{flex:1}
+  .key-indicator{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);padding:4px 10px;background:var(--bg);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:border-color .2s}
+  .key-indicator:hover{border-color:var(--blue);color:var(--blue)}
+  .key-dot{width:7px;height:7px;border-radius:50%;background:#ef4444}
+  .key-dot.active{background:#22c55e}
+  .pdf-preview-wrap{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:16px;box-shadow:0 4px 24px rgba(0,0,0,.08);}
+  .pdf-preview-header{padding:14px 20px;background:linear-gradient(135deg,#1e293b,#0f172a);display:flex;align-items:center;justify-content:space-between;}
+  .pdf-preview-header span{color:#94a3b8;font-size:12px;font-weight:700;font-family:monospace}
+  .pdf-preview-dots{display:flex;gap:6px}
+  .pdf-dot{width:12px;height:12px;border-radius:50%}
+  .pdf-preview-body{padding:0}
+  .pdf-page-sim{background:#fff;margin:20px auto;width:90%;min-height:500px;box-shadow:0 8px 40px rgba(0,0,0,.18);border-radius:4px;padding:60px 64px;color:#1e293b;font-family:'Cairo',Arial,sans-serif;position:relative;}
+  .dark .pdf-page-sim{background:#fff;color:#1e293b}
+</style>
+</head>
+<body>
+<div class="frosted-bg-1"></div>
+<div class="frosted-bg-2"></div>
+<header>
+  <div class="header-btns" id="auth-container"></div>
+  <nav id="mainNav">
+    <button class="nav-toggle" id="navToggle" onclick="toggleNavMenu()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <span id="navLabel">القائمة</span>
+      <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="nav-dropdown" id="navDropdown">
+      <button class="nav-link active" onclick="navGoPage('home')" data-page="home">🏠 <span>الرئيسية</span></button>
+      <button class="nav-link" onclick="navGoPage('tools')" data-page="tools">🖥️ <span>أدوات عادية</span></button>
+      <button class="nav-link" onclick="navGoPage('aitools')" data-page="aitools">🤖 <span>أدوات AI</span></button>
+      <button class="nav-link" onclick="navGoPage('organize')" data-page="organize">📋 <span>تنظيم</span></button>
+      <button class="nav-link" onclick="navGoPage('templates')" data-page="templates">📄 <span>القوالب</span></button>
+      <button class="nav-link" onclick="navGoPage('sign')" data-page="sign">✍️ <span>التوقيع</span></button>
+      <button class="nav-link" onclick="navGoPage('encryption')" data-page="encryption">🔒 <span>الحماية</span></button>
+      <button class="nav-link" onclick="navGoPage('history')" data-page="history">📜 <span>السجل</span></button>
+      <button class="nav-link" onclick="navGoPage('forms')" data-page="forms">📋 <span>النماذج</span></button>
+    </div>
+  </nav>
+  <a class="logo" onclick="goPage('home')" href="#">
+    <div class="logo-icon">📄</div>
+    <span class="logo-text" id="logoText">أدوات PDF الذكية</span>
+  </a>
+</header>
+<main>
+<div class="page active" id="page-home">
+  <div class="grid12" style="margin-bottom:20px;">
+    <div class="card" onclick="goPage('tools')" style="grid-column:span 4;">
+      <div class="icon-box" style="background:#eff6ff;color:#3b82f6;">🗂️</div>
+      <h3>دمج وتقسيم الملفات</h3>
+      <p>دمج عدة مستندات في ملف واحد أو تقسيم ملف PDF كبير إلى صفحات منفصلة.</p>
+    </div>
+    <div class="card" onclick="goPage('aitools')" style="grid-column:span 4;border-color:#bfdbfe;box-shadow:0 0 0 2px rgba(59,130,246,.15);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div class="icon-box" style="background:#1d4ed8;color:#fff;">🤖</div>
+        <span class="ai-badge">AI Powered</span>
+      </div>
+      <h3>الدردشة والتلخيص</h3>
+      <p>استخدم الذكاء الاصطناعي لتحليل ملفاتك وطرح الأسئلة واستخراج الخلاصات.</p>
+    </div>
+    <div class="card" onclick="goPage('encryption')" style="grid-column:span 4;">
+      <div class="icon-box" style="background:#f0fdf4;color:#16a34a;">🔒</div>
+      <h3>التشفير العسكري</h3>
+      <p>حماية ملفاتك بتقنية AES-256-GCM الحقيقية.</p>
+    </div>
+  </div>
+  <div class="grid12">
+    <div class="hero-banner">
+      <svg class="hero-blob" viewBox="0 0 200 200"><path fill="#fff" d="M44.7,-76.4C58.8,-69.2,71.8,-59.1,79.6,-45.8C87.4,-32.5,90,-16.3,88.5,-0.9C86.9,14.6,81.1,29.1,72.4,41.4C63.6,53.8,51.8,63.9,38.5,71.1C25.2,78.3,10.3,82.5,-3.8,89.1C-17.9,95.7,-31.2,104.7,-42.6,101.9C-54,99.1,-63.5,84.5,-71,70.8C-78.5,57.1,-84.1,44.4,-88.1,31C-92.1,17.6,-94.5,3.6,-92,-9.5C-89.4,-22.6,-82,-34.7,-72.1,-44.6C-62.2,-54.5,-49.8,-62.1,-37.2,-70.3C-24.6,-78.5,-11.7,-87.3,1.9,-90.6C15.6,-93.9,30.6,-83.6,44.7,-76.4Z" transform="translate(100 100)"/></svg>
+      <h2>جاهز لمعالجة ملفاتك؟</h2>
+      <p>جميع العمليات تتم في المتصفح لضمان خصوصيتك التامة.</p>
+      <button class="btn-white" onclick="goPage('tools')">ابدأ الآن →</button>
+    </div>
+    <div class="stats-col">
+      <div class="stat-card"><div class="stat-num">+15</div><div class="stat-label">أداة احترافية</div></div>
+      <div class="stat-card"><div class="stat-num">100%</div><div class="stat-label">آمن ومحلي</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLS -->
+<div class="page" id="page-tools">
+  <div class="page-title text-center">
+    <h1>الأدوات العادية</h1>
+    <p>مجموعة شاملة من أدوات معالجة PDF</p>
+  </div>
+  <div class="grid3">
+    <div class="card" onclick="goPage('merge')"><div class="icon-box" style="background:#eff6ff;color:#3b82f6;">🗂️</div><h3>دمج PDF</h3><p>دمج عدة ملفات PDF في ملف واحد بسهولة.</p></div>
+    <div class="card" onclick="goPage('split')"><div class="icon-box" style="background:#eef2ff;color:#6366f1;">✂️</div><h3>تقسيم PDF</h3><p>فصل صفحة أو مجموعة صفحات من ملف PDF.</p></div>
+    <div class="card" onclick="goPage('compress')"><div class="icon-box" style="background:#f0fdf4;color:#22c55e;">📦</div><h3>ضغط PDF</h3><p>تقليل حجم ملف PDF مع الحفاظ على الجودة.</p></div>
+    <div class="card" onclick="goPage('view')"><div class="icon-box" style="background:#ecfeff;color:#06b6d4;">👁️</div><h3>عرض PDF</h3><p>تصفح ملفات PDF بسلاسة داخل المتصفح.</p></div>
+    <div class="card" onclick="goPage('img2pdf')"><div class="icon-box" style="background:#fff7ed;color:#f97316;">🖼️</div><h3>صورة إلى PDF</h3><p>تحويل الصور (JPG, PNG) إلى صفحات PDF.</p></div>
+    <div class="card" onclick="goPage('create')"><div class="icon-box" style="background:#f0fdfa;color:#14b8a6;">➕</div><h3>إنشاء PDF</h3><p>إنشاء ملف PDF جديد من النصوص بتنسيق احترافي.</p></div>
+    <div class="card" onclick="goPage('number')"><div class="icon-box" style="background:#fdf4ff;color:#d946ef;">🔢</div><h3>ترقيم الصفحات</h3><p>إضافة أرقام الصفحات إلى ملف PDF.</p></div>
+    <div class="card" onclick="goPage('sign')"><div class="icon-box" style="background:#faf5ff;color:#a855f7;">✍️</div><h3>توقيع PDF</h3><p>إضافة توقيعك إلى ملف PDF بسهولة.</p></div>
+    <div class="card" onclick="goPage('encrypt')"><div class="icon-box" style="background:#f8fafc;color:#475569;">🔐</div><h3>تشفير PDF</h3><p>حماية ملفاتك بكلمة مرور قوية.</p></div>
+    <div class="card" onclick="goPage('forms')"><div class="icon-box" style="background:#eff6ff;color:#3b82f6;">📋</div><h3>نماذج PDF</h3><p>إنشاء وتعبئة نماذج PDF تفاعلية.</p></div>
+  </div>
+</div>
+
+<!-- AI TOOLS -->
+<div class="page" id="page-aitools">
+  <div class="page-title text-center">
+    <span class="ai-badge">AI Powered</span>
+    <h1>أدوات الذكاء الاصطناعي</h1>
+    <p>أدوات متقدمة تعيد تعريف كيفية تعاملك مع مستندات PDF</p>
+  </div>
+  <div class="grid3">
+    <div class="card" onclick="goPage('summarize')"><div class="icon-box" style="background:#eff6ff;color:#3b82f6;">🧠</div><h3>التلخيص الذكي</h3><p>لخص أي ملف PDF في ثوانٍ بذكاء اصطناعي.</p></div>
+    <div class="card" onclick="goPage('ocr')"><div class="icon-box" style="background:#eef2ff;color:#6366f1;">🔍</div><h3>استخراج نصوص OCR</h3><p>حول الصور إلى نصوص قابلة للتعديل.</p></div>
+    <div class="card" onclick="goPage('chat')"><div class="icon-box" style="background:#f0fdf4;color:#22c55e;">💬</div><h3>تحدث مع PDF</h3><p>اسأل الذكاء الاصطناعي عن محتوى الملف.</p></div>
+    <div class="card" onclick="goPage('translate')"><div class="icon-box" style="background:#f0fdfa;color:#14b8a6;">🌐</div><h3>ترجمة فورية</h3><p>ترجم محتوى PDF إلى أي لغة بذكاء.</p></div>
+    <div class="card" onclick="goPage('compare')"><div class="icon-box" style="background:#fffbeb;color:#f59e0b;">📑</div><h3>مقارنة الملفات</h3><p>قارن بين ملفين PDF واكتشف الفروق.</p></div>
+    <div class="card" onclick="goPage('aicreate')"><div class="icon-box" style="background:#faf5ff;color:#a855f7;">✨</div><h3>إنشاء بالذكاء الاصطناعي</h3><p>أنشئ ملف PDF كامل منسق احترافياً من وصف بسيط.</p></div>
+    <div class="card" onclick="goPage('studynote')"><div class="icon-box" style="background:#fee2e2;color:#ef4444;">📚</div><h3>مذكرة من كتاب</h3><p>ارفع كتابك أو ملف PDF واحصل على مذكرة منظمة وأسئلة متوقعة جاهزة للطباعة.</p></div>
+  </div>
+</div>
+
+<!-- MERGE -->
+<div class="page" id="page-merge">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#eff6ff;color:#3b82f6;">🗂️</div>
+      <h1>دمج PDF</h1><p>دمج عدة ملفات PDF في ملف واحد بسهولة.</p>
+    </div>
+    <div id="merge-upload-area">
+      <div class="drop-zone" id="merge-drop" onclick="document.getElementById('merge-input').click()" ondragover="dragOver(event,'merge-drop')" ondragleave="dragLeave('merge-drop')" ondrop="dropFiles(event,'merge')">
+        <input type="file" id="merge-input" multiple accept="application/pdf" onchange="addFiles(event,'merge')">
+        <div class="drop-icon">📂</div>
+        <h3>اسحب وأفلت ملفات PDF هنا</h3>
+        <p>أو انقر للاختيار — يمكنك إضافة أكثر من ملف</p>
+      </div>
+      <div class="file-list" id="merge-files"></div>
+      <div class="action-row" id="merge-action" style="display:none;">
+        <button class="btn-primary" onclick="mergePDFs()">🗂️ دمج الملفات</button>
+      </div>
+    </div>
+    <div id="merge-result" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- SPLIT -->
+<div class="page" id="page-split">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#eef2ff;color:#6366f1;">✂️</div>
+      <h1>تقسيم PDF</h1><p>فصل صفحة أو نطاق من ملف PDF.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('split-input').click()">
+      <input type="file" id="split-input" accept="application/pdf" onchange="loadSplit(event)">
+      <div class="drop-icon">📄</div><h3>اختر ملف PDF للتقسيم</h3>
+    </div>
+    <div class="section-card" id="split-options" style="display:none;">
+      <h3>خيارات التقسيم</h3>
+      <div class="form-group"><label>من صفحة</label><input type="number" id="split-from" value="1" min="1"></div>
+      <div class="form-group"><label>إلى صفحة</label><input type="number" id="split-to" placeholder="..."></div>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px;" id="split-info"></p>
+      <div class="action-row"><button class="btn-primary" onclick="splitPDF()">✂️ تقسيم</button></div>
+    </div>
+    <div id="split-result"></div>
+  </div>
+</div>
+
+<!-- COMPRESS -->
+<div class="page" id="page-compress">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#f0fdf4;color:#22c55e;">📦</div>
+      <h1>ضغط PDF</h1><p>تقليل حجم ملف PDF مع الحفاظ على الجودة.</p>
+    </div>
+    <div class="info-box">⚠️ الضغط يُزيل البيانات الوصفية والخطوط الزائدة لتخفيف الحجم.</div>
+    <div class="drop-zone" onclick="document.getElementById('compress-input').click()">
+      <input type="file" id="compress-input" accept="application/pdf" onchange="loadCompress(event)">
+      <div class="drop-icon">📦</div><h3>اختر ملف PDF للضغط</h3>
+    </div>
+    <div id="compress-info" style="display:none;" class="section-card">
+      <h3 id="compress-filename"></h3>
+      <p id="compress-size" style="color:var(--muted);font-size:13px;margin-bottom:12px;"></p>
+      <div class="action-row"><button class="btn-primary" onclick="compressPDF()">📦 ضغط الملف</button></div>
+    </div>
+    <div id="compress-result"></div>
+  </div>
+</div>
+
+<!-- VIEW -->
+<div class="page" id="page-view">
+  <div class="tool-page" style="max-width:1000px;">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#ecfeff;color:#06b6d4;">👁️</div>
+      <h1>عارض PDF المتقدم</h1><p>تصفح ملفاتك صفحة بصفحة مع أدوات تحكم كاملة.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('view-input').click()" id="view-drop">
+      <input type="file" id="view-input" accept="application/pdf" onchange="loadPDFView(event)">
+      <div class="drop-icon">👁️</div><h3>اختر ملف PDF للعرض</h3>
+    </div>
+    <div id="view-viewer-container" style="display:none;" class="section-card">
+      <div class="viewer-toolbar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn-secondary" onclick="viewPrevPage()" style="padding:4px 10px;">السابق</button>
+          <span style="font-size:14px;color:var(--text);"><span id="view-page-num">1</span> / <span id="view-page-count">0</span></span>
+          <button class="btn-secondary" onclick="viewNextPage()" style="padding:4px 10px;">التالي</button>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn-secondary" onclick="viewZoomOut()" style="padding:4px 10px;">➖</button>
+          <span id="view-zoom-val" style="font-size:13px;width:40px;text-align:center;">100%</span>
+          <button class="btn-secondary" onclick="viewZoomIn()" style="padding:4px 10px;">➕</button>
+        </div>
+        <button class="btn-secondary" onclick="resetView()" style="font-size:12px;padding:4px 10px;">🔄 ملف آخر</button>
+      </div>
+      <div id="pdf-view-canvas-wrapper" style="overflow:auto;background:#cbd5e1;padding:20px;border-radius:8px;max-height:800px;display:flex;justify-content:center;">
+        <canvas id="view-pdf-canvas" style="background:#fff;box-shadow:0 10px 25px rgba(0,0,0,0.2);"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE TO PDF -->
+<div class="page" id="page-img2pdf">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#fff7ed;color:#f97316;">🖼️</div>
+      <h1>تحويل الصور إلى PDF</h1><p>حوّل صورك (JPG, PNG) إلى مستندات PDF بضغطة واحدة.</p>
+    </div>
+    
+    <div class="section-card">
+      <div id="img2pdf-drop" class="drop-zone" onclick="document.getElementById('img2pdf-input').click()">
+        <input type="file" id="img2pdf-input" accept="image/*" multiple onchange="handleImgToPdfFiles(event)" hidden>
+        <div class="drop-icon">➕</div>
+        <p>ارفع الصور هنا (يمكنك اختيار ملفات متعددة)</p>
+      </div>
+
+      <div id="img2pdf-preview-area" style="display:none;margin-top:20px;">
+        <h3 style="margin-bottom:15px;font-size:16px;">الصور المختارة:</h3>
+        <div id="img2pdf-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:15px;margin-bottom:20px;"></div>
+        
+        <div class="action-row" style="justify-content:center;border-top:1px solid #eee;padding-top:20px;">
+           <button class="btn-ai" onclick="convertImagesToPdf()" id="btn-convert-img">
+             <span class="btn-ai-icon">🚀</span>
+             <span>تحويل إلى PDF وتحميل</span>
+           </button>
+           <button class="btn-secondary" onclick="resetImgToPdf()">🗑️ مسح الكل</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="page" id="page-history">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#f1f5f9;color:#475569;">🕒</div>
+      <h1>سجل العمليات</h1>
+      <p>استعرض الملفات والعمليات التي قمت بها سابقاً. يتم حفظ السجل لسهولة الوصول إليه.</p>
+    </div>
+    
+    <div class="section-card" id="history-content">
+      <div id="history-loading" style="text-align:center; padding:40px;">
+        <div class="spinner" style="margin-bottom:15px;"></div>
+        <p>جاري تحميل السجل...</p>
+      </div>
+      
+      <div id="history-empty" style="display:none; text-align:center; padding:40px;">
+        <div style="font-size:40px; margin-bottom:15px;">📂</div>
+        <h3>لا يوجد سجل حتى الآن</h3>
+        <p>ابدأ باستخدام الأدوات لتظهر لك قائمة بملفاتك هنا.</p>
+      </div>
+      
+      <div id="history-logged-out" style="display:none; text-align:center; padding:40px;">
+        <div style="font-size:40px; margin-bottom:15px;">👤</div>
+        <h3>يجب تسجيل الدخول</h3>
+        <p>يرجى تسجيل الدخول لمشاهدة سجل عملياتك.</p>
+      </div>
+
+      <div id="history-list" class="history-list" style="display:none;">
+        <!-- History items will be injected here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE — الأداة المحدّثة -->
+<div class="page" id="page-create">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#f0fdfa;color:#14b8a6;">➕</div>
+      <h1>إنشاء PDF</h1>
+      <p>إنشاء ملف PDF احترافي من نص — أو دعِ الذكاء الاصطناعي ينسّقه بشكل رائع</p>
+    </div>
+    <div class="section-card">
+      <div class="form-group">
+        <label>عنوان المستند</label>
+        <input type="text" id="create-title" placeholder="عنوان...">
+      </div>
+      <div class="form-group">
+        <label>المحتوى</label>
+        <textarea id="create-content" rows="10" placeholder="اكتب محتوى المستند هنا..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label>نوع الخط</label>
+          <select id="create-font">
+            <option value="Cairo">Cairo (عربي)</option>
+            <option value="Tajawal">Tajawal (عربي)</option>
+            <option value="Arial">Arial</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Courier New">Courier New</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>حجم الخط</label>
+          <select id="create-fontsize">
+            <option value="11">صغير — 11px</option>
+            <option value="13" selected>متوسط — 13px</option>
+            <option value="15">كبير — 15px</option>
+            <option value="18">كبير جداً — 18px</option>
+          </select>
+        </div>
+      </div>
+      <div class="action-row" style="gap:10px;flex-wrap:wrap;justify-content:flex-start;">
+        <button class="btn-primary" onclick="createPDF()">➕ إنشاء PDF عادي</button>
+        <button class="btn-ai" onclick="aiFormatAndCreate()" id="btn-ai-format">
+          <span class="btn-ai-icon">✨</span>
+          <span>تنسيق احترافي بالـ AI</span>
+        </button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;padding-right:4px;">
+        💡 <strong>إنشاء عادي:</strong> بدون إنترنت &nbsp;|&nbsp; <strong>✨ تنسيق AI:</strong> يجمّل ويرتّب المحتوى باستخدام الذكاء الاصطناعي
+      </p>
+    </div>
+    <div id="create-result"></div>
+  </div>
+</div>
+
+<!-- NUMBER -->
+<div class="page" id="page-number">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#fdf4ff;color:#d946ef;">🔢</div>
+      <h1>ترقيم الصفحات</h1><p>إضافة أرقام الصفحات إلى ملف PDF.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('number-input').click()">
+      <input type="file" id="number-input" accept="application/pdf" onchange="loadNumber(event)">
+      <div class="drop-icon">🔢</div><h3>اختر ملف PDF</h3>
+    </div>
+    <div id="number-options" style="display:none;" class="section-card">
+      <h3>خيارات الترقيم</h3>
+      <div class="form-row">
+        <div class="form-group"><label>الموضع</label>
+          <select id="number-pos">
+            <option value="bottom-center">أسفل - وسط</option>
+            <option value="bottom-right">أسفل - يمين</option>
+            <option value="bottom-left">أسفل - يسار</option>
+            <option value="top-center">أعلى - وسط</option>
+          </select>
+        </div>
+        <div class="form-group"><label>البداية من</label><input type="number" id="number-start" value="1" min="1"></div>
+      </div>
+      <div class="action-row"><button class="btn-primary" onclick="numberPDF()">🔢 إضافة الأرقام</button></div>
+    </div>
+    <div id="number-result"></div>
+  </div>
+</div>
+
+<!-- SIGN -->
+<div class="page" id="page-sign">
+  <div class="tool-page" style="max-width:1100px;">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#faf5ff;color:#a855f7;">✍️</div>
+      <h1>توقيع PDF الذكي</h1><p>ارسم توقيعك وضعه في أي مكان داخل ملفاتك.</p>
+    </div>
+
+    <div class="grid-2-1" style="display:grid;grid-template-columns:1fr 320px;gap:20px;">
+      <!-- PDF Preview & Interaction -->
+      <div class="section-card" id="sign-step-pdf" style="min-height:400px;display:flex;flex-direction:column;">
+        <h3>1. اختر ملف PDF للبدء بالتوقيع</h3>
+        <div id="sign-pdf-drop" class="drop-zone" onclick="document.getElementById('sign-pdf-input').click()" style="padding:40px;margin-bottom:15px;">
+           <input type="file" id="sign-pdf-input" accept="application/pdf" onchange="loadSignPdf(event)">
+           <div class="drop-icon" style="font-size:32px;">📄</div>
+           <p>اختر الملف المراد توقيعه</p>
+        </div>
+        
+        <div id="sign-viewer-wrap" style="display:none;flex-grow:1;">
+          <div class="viewer-toolbar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;">
+             <span>انقر على المكان المطلوب لوضع التوقيع</span>
+             <div style="display:flex;gap:5px;">
+                <button class="btn-secondary" onclick="signPrevPage()" style="padding:2px 8px;">السابق</button>
+                <span id="sign-page-info">1/1</span>
+                <button class="btn-secondary" onclick="signNextPage()" style="padding:2px 8px;">التالي</button>
+             </div>
+          </div>
+          <div id="sign-pdf-container" style="position:relative;background:#eee;border-radius:8px;overflow:auto;max-height:600px;display:flex;justify-content:center;cursor:crosshair;">
+             <canvas id="sign-pdf-canvas" style="background:#fff;"></canvas>
+             <div id="sign-overlay-indicator" style="position:absolute;pointer-events:none;display:none;border:2px dashed #1d4ed8;background:rgba(29, 78, 216, 0.1);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signature Drawing Pad -->
+      <div class="section-card" style="display:flex;flex-direction:column;">
+        <h3>2. ارسم توقيعك</h3>
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;padding:5px;">
+           <canvas id="sig-canvas" width="280" height="150" style="background:white;cursor:crosshair;touch-action:none;display:block;margin:0 auto;border-radius:4px;"></canvas>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:15px;">
+           <button class="btn-secondary" style="flex:1;font-size:12px;padding:6px;" onclick="clearSig()">🗑️ مسح</button>
+           <button class="btn-primary" style="flex:1;font-size:12px;padding:6px;" onclick="saveSigToLibrary()">💾 حفظ</button>
+           <button class="btn-secondary" style="flex:1.2;font-size:12px;padding:6px;" onclick="downloadCurrentSig()">⬇️ تحميل PNG</button>
+        </div>
+        
+        <div id="sig-library-wrap" style="display:none;">
+           <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">تواقيعك المحفوظة:</p>
+           <div id="sig-library" style="display:flex;gap:10px;flex-wrap:wrap;padding:10px;background:#f1f5f9;border-radius:8px;margin-bottom:15px;"></div>
+        </div>
+
+        <div id="sign-action-panel" style="display:none;margin-top:auto;border-top:1px solid #eee;padding-top:15px;">
+           <button class="btn-ai" onclick="embedAndDownload()" style="width:100%;" id="btn-sign-embed">
+             <span class="btn-ai-icon">✍️</span>
+             <span>حفظ التوقيع على الـ PDF</span>
+           </button>
+           <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">سيتم دمج التوقيع في المكان الذي اخترته</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ENCRYPTION -->
+<div class="page" id="page-encryption">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#f0fdf4;color:#16a34a;">🔒</div>
+      <h1>التشفير العسكري</h1><p>تشفير AES-256-GCM حقيقي — خارج المتصفح تماماً.</p>
+    </div>
+    <div class="enc-badge">🛡️ AES-256-GCM · PBKDF2 · 310,000 iter</div>
+    <div class="section-card">
+      <div class="form-group"><label>اختر ملفاً للتشفير</label><input type="file" id="enc-file" style="padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);width:100%;font-family:inherit;"></div>
+      <div class="form-group">
+        <label>كلمة المرور</label>
+        <input type="text" id="enc-pass" placeholder="أدخل كلمة مرور قوية...">
+        <div class="strength-bar-wrap" id="strength-bars">
+          <div class="strength-seg" id="s1"></div><div class="strength-seg" id="s2"></div>
+          <div class="strength-seg" id="s3"></div><div class="strength-seg" id="s4"></div>
+        </div>
+        <p id="strength-label" style="font-size:12px;color:var(--muted);margin-top:4px;"></p>
+      </div>
+      <div class="action-row"><button class="btn-primary" onclick="encryptFile()">🔒 تشفير الملف</button></div>
+    </div>
+    <div class="section-card" style="margin-top:16px;">
+      <h3>فك التشفير</h3>
+      <div class="form-group"><label>ملف مشفّر (.enc)</label><input type="file" id="dec-file" style="padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);width:100%;font-family:inherit;"></div>
+      <div class="form-group"><label>كلمة المرور</label><input type="text" id="dec-pass" placeholder="كلمة المرور..."></div>
+      <div class="action-row"><button class="btn-primary" onclick="decryptFile()">🔓 فك التشفير</button></div>
+    </div>
+    <div id="enc-result"></div>
+  </div>
+</div>
+
+<!-- ENCRYPT -->
+<div class="page" id="page-encrypt">
+  <div class="tool-page">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#f8fafc;color:#475569;">🔐</div>
+      <h1>تشفير PDF</h1><p>أضف كلمة مرور لحماية ملفك.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('encpdf-input').click()">
+      <input type="file" id="encpdf-input" accept="application/pdf" onchange="loadEncPdf(event)">
+      <div class="drop-icon">🔐</div><h3>اختر ملف PDF</h3>
+    </div>
+    <div id="encpdf-options" style="display:none;" class="section-card">
+      <div class="form-group"><label>كلمة المرور</label><input type="text" id="encpdf-pass" placeholder="كلمة مرور قوية..."></div>
+      <div class="action-row"><button class="btn-primary" onclick="encryptPDF()">🔐 تشفير</button></div>
+    </div>
+    <div id="encpdf-result"></div>
+  </div>
+</div>
+
+<!-- ORGANIZE -->
+<div class="page" id="page-organize">
+  <div class="tool-page" style="max-width:900px;">
+    <div class="tool-header">
+      <div class="tool-icon-lg" style="background:#f0f9ff;color:#0ea5e9;">🗂️</div>
+      <h1>تنظيم الصفحات</h1><p>رتّب صفحات PDF واحذف ما تريد.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('org-input').click()" id="org-drop">
+      <input type="file" id="org-input" accept="application/pdf" onchange="loadOrganize(event)">
+      <div class="drop-icon">🗂️</div><h3>اختر ملف PDF</h3>
+    </div>
+    <div id="org-area" style="display:none;">
+      <div class="section-card">
+        <h3>صفحات الملف — اسحب لإعادة الترتيب | انقر ✖ للحذف</h3>
+        <div class="thumb-grid" id="org-grid"></div>
+        <div class="action-row"><button class="btn-primary" onclick="applyOrganize()">💾 حفظ الترتيب الجديد</button></div>
+      </div>
+    </div>
+    <div id="org-result"></div>
+  </div>
+</div>
+
+<!-- TEMPLATES -->
+<div class="page" id="page-templates">
+  <div class="page-title text-center">
+    <h1>القوالب الجاهزة</h1><p>اختر قالباً وعدّل عليه مباشرة</p>
+  </div>
+  <div class="grid3">
+    <div class="card" onclick="useTemplate('cv')"><div class="icon-box" style="background:#eff6ff;color:#3b82f6;">📋</div><h3>السيرة الذاتية</h3><p>قالب سيرة ذاتية احترافي جاهز للتخصيص.</p></div>
+    <div class="card" onclick="useTemplate('invoice')"><div class="icon-box" style="background:#f0fdf4;color:#22c55e;">🧾</div><h3>الفاتورة التجارية</h3><p>فاتورة تجارية احترافية قابلة للتعديل.</p></div>
+    <div class="card" onclick="useTemplate('letter')"><div class="icon-box" style="background:#fdf4ff;color:#d946ef;">📝</div><h3>الخطاب الرسمي</h3><p>خطاب رسمي بتنسيق مناسب للمراسلات.</p></div>
+    <div class="card" onclick="useTemplate('report')"><div class="icon-box" style="background:#fff7ed;color:#f97316;">📊</div><h3>تقرير عمل</h3><p>قالب تقرير عمل منظّم وواضح.</p></div>
+    <div class="card" onclick="useTemplate('contract')"><div class="icon-box" style="background:#f0fdfa;color:#14b8a6;">📃</div><h3>عقد عمل</h3><p>عقد عمل قانوني جاهز للتخصيص.</p></div>
+    <div class="card" onclick="useTemplate('proposal')"><div class="icon-box" style="background:#faf5ff;color:#a855f7;">💡</div><h3>عرض مشروع</h3><p>قالب عرض تقديمي لمشروعك.</p></div>
+  </div>
+  <div id="template-editor" style="display:none;" class="section-card">
+    <h3 id="template-title"></h3>
+    <textarea id="template-content" rows="12"></textarea>
+    <div class="action-row">
+      <button class="btn-primary" onclick="exportTemplate()">⬇️ تصدير كـ PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARIZE -->
+<div class="page" id="page-summarize">
+  <div class="tool-page">
+    <div class="tool-header">
+      <span class="ai-badge">AI · Gemini</span>
+      <div class="tool-icon-lg" style="background:#eff6ff;color:#3b82f6;">🧠</div>
+      <h1>التلخيص الذكي</h1><p>لخص أي ملف PDF في ثوانٍ باستخدام الذكاء الاصطناعي.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('sum-input').click()" id="sum-dz">
+      <input type="file" id="sum-input" accept="application/pdf" onchange="handleSumFile(this.files[0])">
+      <div class="drop-icon">📄</div>
+      <h3>ارفع ملف PDF للتلخيص</h3>
+      <p>يستخرج الذكاء الاصطناعي النقاط الرئيسية في ثوانٍ</p>
+    </div>
+    <div id="sum-file-info" style="display:none;" class="section-card">
+      <h3 id="sum-file-name"></h3>
+      <div class="form-group" style="margin-top:12px;">
+        <label>نوع التلخيص</label>
+        <select id="sum-type">
+          <option value="short">ملخص قصير (نقاط رئيسية)</option>
+          <option value="detailed">ملخص تفصيلي</option>
+          <option value="bullets">نقاط مُرقَّمة</option>
+        </select>
+      </div>
+      <div class="action-row"><button class="btn-primary" onclick="runSummarize()">🧠 تلخيص الآن</button></div>
+    </div>
+    <div id="sum-result"></div>
+  </div>
+</div>
+
+<!-- STUDYNOTE -->
+<div class="page" id="page-studynote">
+  <div class="tool-page">
+    <div class="tool-header">
+      <span class="ai-badge">AI · Gemini</span>
+      <div class="tool-icon-lg" style="background:#fee2e2;color:#ef4444;">📚</div>
+      <h1>مذكرة من كتاب</h1><p>ارفع كتابك أو أي ملف PDF واحصل على مذكرة منظمة وأسئلة متوقعة جاهزة للطباعة.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('studynote-input').click()" id="studynote-dz">
+      <input type="file" id="studynote-input" accept="application/pdf" onchange="handleStudynoteFile(this.files[0])">
+      <div class="drop-icon">📄</div>
+      <h3>ارفع الكتاب أو الملف</h3>
+      <p>يتم تحليل الكتاب لإنشاء مذكرة وأسئلة متوقعة</p>
+    </div>
+    <div id="studynote-file-info" style="display:none;" class="section-card">
+      <h3 id="studynote-file-name"></h3>
+      <div class="action-row"><button class="btn-primary" onclick="runStudynote()">📚 إنشاء مذكرة وأسئلة</button></div>
+    </div>
+    <div id="studynote-result"></div>
+  </div>
+</div>
+
+<!-- OCR -->
+<div class="page" id="page-ocr">
+  <div class="tool-page">
+    <div class="tool-header">
+      <span class="ai-badge">Tesseract.js</span>
+      <div class="tool-icon-lg" style="background:#eef2ff;color:#6366f1;">🔍</div>
+      <h1>استخراج نصوص OCR</h1><p>استخراج النصوص من الصور والملفات الممسوحة.</p>
+    </div>
+    <div class="info-box">⚡ يعمل محلياً في المتصفح — لا يُرفع أي ملف.</div>
+    <div class="drop-zone" onclick="document.getElementById('ocr-input').click()" id="ocr-dz">
+      <input type="file" id="ocr-input" accept="image/*" onchange="handleOcrFile(this.files[0])">
+      <div class="drop-icon">🔍</div>
+      <h3>ارفع صورة لاستخراج النص</h3>
+      <p>PNG, JPG, WEBP — يدعم العربية والإنجليزية</p>
+    </div>
+    <div id="ocr-result"></div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="page" id="page-chat">
+  <div class="tool-page">
+    <div class="tool-header">
+      <span class="ai-badge">AI · Gemini</span>
+      <div class="tool-icon-lg" style="background:#f0fdf4;color:#22c55e;">💬</div>
+      <h1>تحدث مع PDF</h1><p>اطرح أسئلة على مستنداتك واحصل على إجابات.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('chat-input').click()" id="chat-dz">
+      <input type="file" id="chat-input" accept="application/pdf" onchange="handleChatFile(this.files[0])">
+      <div class="drop-icon">💬</div><h3>ارفع ملف PDF وابدأ الدردشة</h3>
+    </div>
+    <div id="chat-area" style="display:none;" class="section-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 id="chat-file-name" style="font-size:14px;color:var(--muted);"></h3>
+        <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="resetChat()">🔄 ملف آخر</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-q" placeholder="اسأل سؤالاً عن الملف..." onkeydown="if(event.key==='Enter')sendChatMsg()">
+        <button class="btn-primary" onclick="sendChatMsg()" style="padding:10px 18px;">إرسال ➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSLATE -->
+<div class="page" id="page-translate">
+  <div class="tool-page">
+    <div class="tool-header">
+      <span class="ai-badge">AI · Gemini</span>
+      <div class="tool-icon-lg" style="background:#f0fdfa;color:#14b8a6;">🌐</div>
+      <h1>ترجمة فورية</h1><p>ترجم محتوى PDF إلى أي لغة.</p>
+    </div>
+    <div class="drop-zone" onclick="document.getElementById('tr-input').click()" id="tr-dz">
+      <input type="file" id="tr-input" accept="application/pdf" onchange="handleTrFile(this.files[0])">
+      <div class="drop-icon">🌐</div><h3>ارفع ملف PDF للترجمة</h3>
+    </div>
+    <div id="tr-options" style="display:none;" class="section-card">
+      <h3 id="tr-file-name"></h3>
+      <div class="form-group" style="margin-top:12px;">
+        <label>ترجم إلى</label>
+        <select id="tr-lang">
+          <option value="العربية">العربية</option>
+          <option value="English">English</option>
+          <option value="Français">Français</option>
+          <option value="Español">Español</option>
+          <option value="Deutsch">Deutsch</option>
+          <option value="中文">中文</option>
+        </select>
+      </div>
+      <div class="action-row"><button class="btn-primary" onclick="runTranslate()">🌐 ترجمة الآن</button></div>
+    </div>
+    <div id="tr-result"></div>
+  </div>
+</div>
+
+<!-- COMPARE -->
+<div class="page" id="page-compare">
+  <div class="tool-page">
+    <div class="tool-header">
+      <span class="ai-badge">AI · Gemini</span>
+      <div class="tool-icon-lg" style="background:#fffbeb;color:#f59e0b;">📑</div>
+      <h1>مقارنة الملفات</h1><p>قارن بين ملفين PDF واكتشف الفروق.</p>
+    </div>
+    <div class="form-row">
+      <div>
+        <div class="drop-zone" onclick="document.getElementById('cmp-input1').click()" style="padding:30px 20px;">
+          <input type="file" id="cmp-input1" accept="application/pdf" onchange="handleCmpFile(this.files[0],1)">
+          <div class="drop-icon" style="font-size:28px;">📄</div>
+          <h3 style="font-size:14px;">الملف الأول</h3>
+          <p id="cmp-name1" style="color:var(--blue);font-size:12px;margin-top:6px;"></p>
+        </div>
+      </div>
+      <div>
+        <div class="drop-zone" onclick="document.getElementById('cmp-input2').click()" style="padding:30px 20px;">
+          <input type="file" id="cmp-input2" accept="application/pdf" onchange="handleCmpFile(this.files[0],2)">
+          <div class="drop-icon" style="font-size:28px;">📄</div>
+          <h3 style="font-size:14px;">الملف الثاني</h3>
+          <p id="cmp-name2" style="color:var(--blue);font-size:12px;margin-top:6px;"></p>
+        </div>
+      </div>
+    </div>
+    <div class="action-row" id="cmp-action" style="display:none;">
+      <button class="btn-primary" onclick="runCompare()">📑 مقارنة الآن</button>
+    </div>
+    <div id="cmp-result"></div>
+  </div>
+</div>
+
+<!-- AI CREATE -->
+<div class="page" id="page-aicreate">
+  <div class="tool-page">
+    <div class="tool-header">
+      <span class="ai-badge">AI · Gemini</span>
+      <div class="tool-icon-lg" style="background:#faf5ff;color:#a855f7;">✨</div>
+      <h1>إنشاء بالذكاء الاصطناعي</h1>
+      <p>أنشئ ملف PDF منسق بشكل احترافي وفريد من وصف بسيط.</p>
+    </div>
+    <div class="section-card">
+      <div class="form-group">
+        <label>اوصف الملف الذي تريد إنشاءه</label>
+        <textarea id="aicreate-desc" rows="5" placeholder="مثال: أنشئ لي تقرير عمل أسبوعي يشمل الإنجازات والتحديات وخطة الأسبوع القادم..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>نوع المستند</label>
+        <select id="aic-type">
+          <option value="report">تقرير</option>
+          <option value="letter">خطاب رسمي</option>
+          <option value="proposal">عرض مشروع</option>
+          <option value="summary">ملخص</option>
+          <option value="plan">خطة عمل</option>
+          <option value="cv">سيرة ذاتية</option>
+          <option value="other">آخر</option>
+        </select>
+      </div>
+      <div class="action-row">
+        <button class="btn-ai" onclick="runAiCreate()" id="btn-aic-run">
+          <span class="btn-ai-icon">✨</span>
+          <span>إنشاء وتنسيق احترافي</span>
+        </button>
+      </div>
+    </div>
+    <div id="aic-result"></div>
+  </div>
+</div>
+
+<!-- FORMS -->
+<div class="page" id="page-forms">
+  <div id="react-forms-root"></div>
+</div>
+
+</main>
+<footer>
+  <span>GeneralPDF © 2025 — جميع العمليات تتم في متصفحك محلياً</span>
+</footer>
+<div id="toast"></div>
+
+
+<script>
+// ===================== STATE =====================
+let lang='ar',dark=false,isAr=true;
+let mergeFilesList=[],splitFile=null,splitPdfDoc=null;
+let compressFile=null,numberFile=null,encpdfFile=null;
+let orgFile=null,orgPages=[];
+let sumFile=null,chatFile=null,chatHistory=[],chatPdfText='';
+let trFile=null,cmpFile1=null,cmpFile2=null;
+
+// Viewer State
+let viewPdfDoc=null,viewCurrentPage=1,viewScale=1.2;
+// Image to PDF State
+let img2pdfFiles=[];
+// Sign State
+let signPdfDoc=null,signLibPdfDoc=null,signCurrentPage=1,signScale=1.0;
+let currentSignImg=null,signPos={x:0,y:0,page:1},signLibrary=[];
+
+// ===================== NAV =====================
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+  const pg=document.getElementById('page-'+id);
+  if(pg)pg.classList.add('active');
+  window.scrollTo(0,0);
+  if(id === 'history') renderHistory();
+}
+function toggleNavMenu(){
+  var t=document.getElementById('navToggle'),d=document.getElementById('navDropdown');
+  var open=d.classList.contains('open');
+  d.classList.toggle('open',!open);t.classList.toggle('open',!open);
+}
+function navGoPage(page){
+  document.getElementById('navDropdown').classList.remove('open');
+  document.getElementById('navToggle').classList.remove('open');
+  document.querySelectorAll('#navDropdown .nav-link').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  goPage(page);
+}
+document.addEventListener('click',function(e){
+  var nav=document.getElementById('mainNav');
+  if(nav&&!nav.contains(e.target)){
+    document.getElementById('navDropdown').classList.remove('open');
+    document.getElementById('navToggle').classList.remove('open');
+  }
+});
+function toggleLang(){lang=lang==='ar'?'en':'ar';isAr=lang==='ar';document.documentElement.setAttribute('lang',lang);document.documentElement.setAttribute('dir',isAr?'rtl':'ltr');document.getElementById('langBtn').textContent=isAr?'EN':'عربي';document.getElementById('logoText').textContent=isAr?'أدوات PDF الذكية':'Smart PDF Tools';}
+function toggleTheme(){
+  dark = !dark;
+  document.documentElement.classList.toggle('dark', dark);
+  const icon = document.getElementById('themeIcon');
+  if(icon) icon.textContent = dark ? '☀️' : '🌙';
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+}
+// Initialize theme
+(function(){
+  const saved = localStorage.getItem('theme');
+  if(saved === 'dark') {
+    dark = true;
+    document.documentElement.classList.add('dark');
+  } else if (saved === 'light') {
+    dark = false;
+    document.documentElement.classList.remove('dark');
+  }
+})();
+function showToast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function dragOver(e,id){e.preventDefault();document.getElementById(id)?.classList.add('drag-over');}
+function dragLeave(id){document.getElementById(id)?.classList.remove('drag-over');}
+function dropFiles(e,type){e.preventDefault();const files=[...e.dataTransfer.files];if(type==='merge')addFilesArr(files,'merge');}
+
+async function renderHistory() {
+  const loadingEl = document.getElementById('history-loading');
+  const emptyEl = document.getElementById('history-empty');
+  const loggedOutEl = document.getElementById('history-logged-out');
+  const listContainer = document.getElementById('history-list');
+
+  if (!loadingEl || !emptyEl || !loggedOutEl || !listContainer) return;
+
+  // إخفاء الكل أولاً
+  loadingEl.style.display = 'none';
+  emptyEl.style.display = 'none';
+  loggedOutEl.style.display = 'none';
+  listContainer.style.display = 'none';
+
+  if (!window.currentUser) {
+    loggedOutEl.style.display = 'block';
+    return;
+  }
+  
+  const isLoaded = window.isHistoryLoaded ? window.isHistoryLoaded() : false;
+  if (!isLoaded) {
+    loadingEl.style.display = 'block';
+    return;
+  }
+
+  // Use the pre-fetched cache for instant display
+  const list = window.getFileHistoryCache ? window.getFileHistoryCache() : [];
+  
+  if (!list || list.length === 0) {
+    // If cache is empty but we are logged in, show empty state
+    emptyEl.style.display = 'block';
+    return;
+  }
+  
+  let html = '';
+  list.forEach(item => {
+    const date = item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleString('ar-EG') : '...';
+    html += `
+      <div class="file-item">
+        <div class="file-info">
+          <span class="file-icon">📄</span>
+          <div>
+            <div class="file-name">${item.fileName}</div>
+            <div class="file-size">${item.toolName} • ${date}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  listContainer.innerHTML = html;
+  listContainer.style.display = 'block';
+}
+// Explicitly expose to window for main.tsx listener
+window.renderHistory = renderHistory;
+function formatSize(b){if(b<1024)return b+' B';if(b<1048576)return (b/1024).toFixed(1)+' KB';return (b/1048576).toFixed(2)+' MB';}
+
+// ===================== MERGE =====================
+function addFiles(e,type){if(type==='merge')addFilesArr([...e.target.files],'merge');}
+function addFilesArr(files,type){if(type==='merge'){files.forEach(f=>{if(!mergeFilesList.find(x=>x.name===f.name)){mergeFilesList.push(f); if(window.saveFileHistory) window.saveFileHistory(f.name, 'أداة الدمج');}});renderMergeList();}}
+function renderMergeList(){
+  const list=document.getElementById('merge-files'),act=document.getElementById('merge-action');
+  if(!mergeFilesList.length){list.innerHTML='';act.style.display='none';return;}
+  list.innerHTML=mergeFilesList.map((f,i)=>`<div class="file-item"><div class="file-info"><span class="file-icon">📄</span><div><div class="file-name">${f.name}</div><div class="file-size">${formatSize(f.size)}</div></div></div><button class="remove-btn" onclick="removeMergeFile(${i})">✖</button></div>`).join('');
+  act.style.display=mergeFilesList.length>=2?'flex':'none';
+}
+function removeMergeFile(i){mergeFilesList.splice(i,1);renderMergeList();}
+async function mergePDFs(){
+  if(mergeFilesList.length<2)return;showToast('جاري الدمج...');
+  try{
+    const{PDFDocument}=PDFLib,merged=await PDFDocument.create();
+    for(const f of mergeFilesList){const buf=await f.arrayBuffer();const doc=await PDFDocument.load(buf);const pages=await merged.copyPages(doc,doc.getPageIndices());pages.forEach(p=>merged.addPage(p));}
+    const bytes=await merged.save(),blob=new Blob([bytes],{type:'application/pdf'});
+    const result=document.getElementById('merge-result');result.style.display='block';document.getElementById('merge-upload-area').style.display='none';
+    result.innerHTML=`<div class="success-box"><div class="success-icon">✅</div><h2>تم الدمج بنجاح!</h2><div class="success-btns"><button class="btn-success" onclick="saveFile(window._mergeBlob,'merged.pdf')">⬇️ تحميل</button><button class="btn-secondary" onclick="resetMerge()">🔄 دمج آخر</button></div></div>`;
+    window._mergeBlob=blob;showToast('✅ تم الدمج!');
+  }catch(e){showToast('❌ '+e.message);}
+}
+function resetMerge(){mergeFilesList=[];document.getElementById('merge-upload-area').style.display='block';document.getElementById('merge-result').style.display='none';document.getElementById('merge-result').innerHTML='';renderMergeList();}
+
+// ===================== SPLIT =====================
+function loadSplit(e){const f=e.target.files[0];if(!f)return;handleSplitFile(f);}
+async function handleSplitFile(file){
+  if(!file)return;splitFile=file; if(window.saveFileHistory) window.saveFileHistory(file.name, 'أداة التقسيم');
+  try{const{PDFDocument}=PDFLib;const buf=await file.arrayBuffer();splitPdfDoc=await PDFDocument.load(buf);const n=splitPdfDoc.getPageCount();document.getElementById('split-options').style.display='block';document.getElementById('split-to').value=n;document.getElementById('split-info').textContent='عدد الصفحات: '+n;}
+  catch(e){showToast('❌ '+e.message);}
+}
+async function splitPDF(){
+  if(!splitPdfDoc)return;
+  const from=parseInt(document.getElementById('split-from').value)-1;
+  const to=parseInt(document.getElementById('split-to').value)-1;
+  try{
+    const{PDFDocument}=PDFLib,newDoc=await PDFDocument.create();
+    const indices=[];for(let i=from;i<=to&&i<splitPdfDoc.getPageCount();i++)indices.push(i);
+    const pages=await newDoc.copyPages(splitPdfDoc,indices);pages.forEach(p=>newDoc.addPage(p));
+    const bytes=await newDoc.save(),blob=new Blob([bytes],{type:'application/pdf'});
+    document.getElementById('split-result').innerHTML=`<div class="success-box" style="margin-top:16px;"><div class="success-icon">✅</div><h2>تم التقسيم!</h2><div class="success-btns"><button class="btn-success" onclick="saveFile(window._splitBlob,'split.pdf')">⬇️ تحميل</button></div></div>`;
+    window._splitBlob=blob;showToast('✅');
+  }catch(e){showToast('❌ '+e.message);}
+}
+
+// ===================== COMPRESS =====================
+function loadCompress(e){
+  const f=e.target.files[0];if(!f)return;compressFile=f;
+  if(window.saveFileHistory) window.saveFileHistory(f.name, 'أداة الضغط');
+  document.getElementById('compress-info').style.display='block';document.getElementById('compress-filename').textContent=f.name;document.getElementById('compress-size').textContent='الحجم الأصلي: '+formatSize(f.size);
+}
+async function compressPDF(){
+  if(!compressFile)return;showToast('جاري الضغط...');
+  try{
+    const{PDFDocument}=PDFLib;const buf=await compressFile.arrayBuffer();const doc=await PDFDocument.load(buf,{ignoreEncryption:true});
+    doc.setTitle('');doc.setAuthor('');doc.setSubject('');doc.setKeywords([]);
+    const bytes=await doc.save({useObjectStreams:true}),blob=new Blob([bytes],{type:'application/pdf'});
+    const pct=Math.round((1-bytes.length/compressFile.size)*100);
+    document.getElementById('compress-result').innerHTML=`<div class="success-box" style="margin-top:16px;"><div class="success-icon">🗜️</div><h2>تم!</h2><p style="color:var(--muted);font-size:13px;margin-bottom:20px;">الحجم الجديد: ${formatSize(bytes.length)} ${pct>0?'(−'+pct+'%)':''}</p><div class="success-btns"><button class="btn-success" onclick="saveFile(window._compressBlob,'compressed.pdf')">⬇️ تحميل</button></div></div>`;
+    window._compressBlob=blob;showToast('✅');
+  }catch(e){showToast('❌ '+e.message);}
+}
+
+// ===================== VIEW =====================
+async function loadPDFView(e){
+  const file=e.target.files[0];if(!file)return;
+  if(window.saveFileHistory) window.saveFileHistory(file.name, 'أداة العرض');
+  showToast('جاري تحميل الملف...');
+  
+  try {
+    if(!window.pdfjsLib) await initPdfJs();
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Core Correction: Improved CMaps and Font loading for Arabic support
+    const loadingTask = window.pdfjsLib.getDocument({
+      data: arrayBuffer,
+      cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+      fontExtraProperties: true,
+      disableFontFace: false,
+    });
+    
+    viewPdfDoc = await loadingTask.promise;
+    viewCurrentPage = 1;
+    viewScale = 1.5; // Slightly higher default for better initial clarity
+    
+    document.getElementById('view-drop').style.display='none';
+    document.getElementById('view-viewer-container').style.display='block';
+    document.getElementById('view-page-count').textContent = viewPdfDoc.numPages;
+    
+    renderViewPage(viewCurrentPage);
+    showToast('✅ تم التحميل');
+  } catch(e) {
+    showToast('❌ '+e.message);
+  }
+}
+
+async function initPdfJs() {
+  await new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js';
+    s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+}
+
+async function renderViewPage(num) {
+  if(!viewPdfDoc) return;
+  const page = await viewPdfDoc.getPage(num);
+  
+  // Advanced High DPI rendering for small text clarity
+  const outputScale = window.devicePixelRatio || 1;
+  const viewport = page.getViewport({ scale: viewScale * outputScale });
+  const canvas = document.getElementById('view-pdf-canvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  
+  canvas.width = Math.floor(viewport.width);
+  canvas.height = Math.floor(viewport.height);
+  canvas.style.width = Math.floor(viewport.width / outputScale) + "px";
+  canvas.style.height = Math.floor(viewport.height / outputScale) + "px";
+  
+  // Rendering onto the scaled canvas
+  const renderContext = {
+    canvasContext: ctx,
+    viewport: viewport,
+    enableWebGL: true
+  };
+  
+  await page.render(renderContext).promise;
+  document.getElementById('view-page-num').textContent = num;
+  document.getElementById('view-zoom-val').textContent = Math.round(viewScale*100) + '%';
+}
+
+function viewNextPage(){ if(viewPdfDoc && viewCurrentPage < viewPdfDoc.numPages){ viewCurrentPage++; renderViewPage(viewCurrentPage); }}
+function viewPrevPage(){ if(viewPdfDoc && viewCurrentPage > 1){ viewCurrentPage--; renderViewPage(viewCurrentPage); }}
+function viewZoomIn(){ viewScale += 0.2; renderViewPage(viewCurrentPage); }
+function viewZoomOut(){ if(viewScale > 0.4){ viewScale -= 0.2; renderViewPage(viewCurrentPage); }}
+function resetView(){
+  viewPdfDoc=null;
+  document.getElementById('view-drop').style.display='block';
+  document.getElementById('view-viewer-container').style.display='none';
+}
+
+// ===================== IMAGE TO PDF =====================
+function handleImgToPdfFiles(e) {
+  const files = [...e.target.files];
+  if(!files.length) return;
+  
+  files.forEach(f => {
+    if(!img2pdfFiles.find(x => x.name === f.name)) {
+      img2pdfFiles.push(f);
+      if(window.saveFileHistory) window.saveFileHistory(f.name, 'صورة إلى PDF');
+    }
+  });
+  
+  renderImgToPdfGrid();
+}
+
+function renderImgToPdfGrid() {
+  const area = document.getElementById('img2pdf-preview-area');
+  const grid = document.getElementById('img2pdf-grid');
+  
+  if(!img2pdfFiles.length) {
+    area.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+  
+  area.style.display = 'block';
+  grid.innerHTML = img2pdfFiles.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `
+      <div class="thumb-card" style="cursor:default;">
+        <img src="${url}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;">
+        <div class="thumb-num">${f.name.substring(0,10)}...</div>
+        <button class="remove-btn" onclick="removeImg2PdfFile(${i})" style="position:absolute;top:-8px;right:-8px;">✖</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeImg2PdfFile(i) {
+  img2pdfFiles.splice(i, 1);
+  renderImgToPdfGrid();
+}
+
+function resetImgToPdf() {
+  img2pdfFiles = [];
+  renderImgToPdfGrid();
+  document.getElementById('img2pdf-input').value = '';
+}
+
+async function convertImagesToPdf() {
+  if(!img2pdfFiles.length) return;
+  const btn = document.getElementById('btn-convert-img');
+  btn.disabled = true;
+  showToast('جاري تحويل الصور...');
+  
+  try {
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.create();
+    
+    for(const f of img2pdfFiles) {
+      const imgBytes = await f.arrayBuffer();
+      let image;
+      if(f.type === 'image/jpeg' || f.type === 'image/jpg') {
+        image = await pdfDoc.embedJpg(imgBytes);
+      } else if(f.type === 'image/png') {
+        image = await pdfDoc.embedPng(imgBytes);
+      } else {
+        // Try as JPG if unknown
+        try { image = await pdfDoc.embedJpg(imgBytes); } 
+        catch { image = await pdfDoc.embedPng(imgBytes); }
+      }
+      
+      const page = pdfDoc.addPage([image.width, image.height]);
+      page.drawImage(image, {
+        x: 0,
+        y: 0,
+        width: image.width,
+        height: image.height,
+      });
+    }
+    
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    saveFile(blob, 'images_to_pdf.pdf');
+    showToast('✅ تم التحويل بنجاح');
+    resetImgToPdf();
+  } catch(e) {
+    showToast('❌ '+e.message);
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ===================== CREATE PDF =====================
+function buildPrintHTML(title, bodyHtml, fontFamily, fontSize, accentColor, style) {
+  fontFamily = fontFamily||'Cairo'; fontSize = parseInt(fontSize)||13;
+  accentColor = accentColor||'#1d4ed8'; style = style||'classic';
+  var googleFont = (fontFamily==='Cairo'||fontFamily==='Tajawal')
+    ? `@import url("https://fonts.googleapis.com/css2?family=${fontFamily}:wght@400;600;700;800&display=swap");` : '';
+  var now=new Date();
+  var months=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  var dateStr=now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
+
+  var styles = {
+    classic: `
+      body{font-family:"${fontFamily}",Arial,sans-serif;direction:rtl;padding:50px 60px;color:#1e293b;line-height:1.9;font-size:${fontSize}px;background:#fff}
+      .doc-header{border-bottom:3px solid ${accentColor};padding-bottom:14px;margin-bottom:28px}
+      h1{color:${accentColor};font-size:${fontSize+10}px;margin-bottom:6px;font-weight:800}
+      .doc-date{color:#94a3b8;font-size:${fontSize-2}px}
+      h2{color:${accentColor};font-size:${fontSize+4}px;margin:22px 0 8px;font-weight:700;border-right:4px solid ${accentColor};padding-right:10px}
+      h3{color:#374151;font-size:${fontSize+2}px;margin:16px 0 6px;font-weight:700}
+      p{margin:6px 0;text-align:justify;line-height:1.9}
+      ul,ol{padding-right:20px;margin:8px 0}
+      li{margin:5px 0}
+      .divider{border:none;border-top:1px solid #e2e8f0;margin:18px 0}
+      strong{color:${accentColor};font-weight:700}
+    `
+  };
+
+  var headerHtml = `<div class="doc-header"><h1>${title}</h1><div class="doc-date">📅 ${dateStr}</div></div>`;
+
+  return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title><style>
+${googleFont}
+*{box-sizing:border-box;margin:0;padding:0}
+${styles[style]||styles.classic}
+.print-btn{display:block;margin:0 auto 24px;padding:10px 36px;background:${accentColor};color:#fff;border:none;border-radius:10px;font-size:15px;font-family:inherit;cursor:pointer;font-weight:700}
+@media print{.print-btn{display:none}body{padding:30px 40px}}
+</style></head><body>
+<button class="print-btn" onclick="window.print()">🖨️ طباعة / حفظ كـ PDF</button>
+${headerHtml}${bodyHtml}
+</body></html>`;
+}
+
+function htmlFromText(text) {
+  var lines = text.split('\n');
+  var out = '';
+  for (var i=0;i<lines.length;i++) {
+    var line = lines[i];
+    var t = line.trim();
+    if (!t) { out += '<div style="height:10px"></div>'; continue; }
+    if (/^#{1,2} /.test(t)||/^\*\*[^*]+\*\*$/.test(t)) {
+      t = t.replace(/^#+ */,'').replace(/^\*\*|\*\*$/g,'');
+      out += '<h2>'+t+'</h2>';
+    } else if (/^### /.test(t)) {
+      t = t.replace(/^### /,'');
+      out += '<h3>'+t+'</h3>';
+    } else if (/^[-•*] /.test(t)) {
+      out += '<ul><li>'+t.replace(/^[-•*] /,'')+'</li></ul>';
+    } else if (/^\d+\. /.test(t)) {
+      out += '<ol><li>'+t.replace(/^\d+\. /,'')+'</li></ol>';
+    } else if (t==='---'||t==='***') {
+      out += '<hr class="divider">';
+    } else {
+      t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+      out += '<p>'+t+'</p>';
+    }
+  }
+  return out;
+}
+
+function openPrintWindow(htmlContent) {
+  var win = window.open('','_blank','width=900,height=750');
+  if (!win) { showToast('❌ المتصفح حجب النافذة — اسمح بالنوافذ المنبثقة'); return false; }
+  win.document.open(); win.document.write(htmlContent); win.document.close();
+  return true;
+}
+
+function createPDF() {
+  var title = document.getElementById('create-title').value.trim()||'مستند';
+  var content = document.getElementById('create-content').value||'';
+  if (!content.trim()) { showToast('❌ أدخل محتوى المستند'); return; }
+  var font = document.getElementById('create-font').value;
+  var fontSize = document.getElementById('create-fontsize').value;
+  var bodyHtml = htmlFromText(content);
+  var html = buildPrintHTML(title, bodyHtml, font, fontSize, '#1d4ed8', 'classic');
+  var ok = openPrintWindow(html);
+  if (ok) {
+    document.getElementById('create-result').innerHTML = '<div class="info-box" style="margin-top:16px;">💡 تم فتح نافذة المعاينة — اضغط زر الطباعة بداخلها للحفظ كـ PDF</div>';
+    showToast('✅ افتحت نافذة المعاينة');
+  }
+}
+
+async function aiFormatAndCreate() {
+  var title = document.getElementById('create-title').value.trim()||'مستند';
+  var content = document.getElementById('create-content').value.trim();
+  if (!content) { showToast('❌ أدخل محتوى المستند أولاً'); return; }
+  var btn = document.getElementById('btn-ai-format');
+  btn.disabled=true; btn.innerHTML='<span class="btn-ai-icon">⏳</span><span>جاري التنسيق الاحترافي...</span>';
+  document.getElementById('create-result').innerHTML='<div class="ai-loading"><div class="spinner"></div><p>الذكاء الاصطناعي يُنسّق ويُجمّل المستند...</p></div>';
+
+  var font = document.getElementById('create-font').value;
+  var fontSize = document.getElementById('create-fontsize').value;
+
+  try {
+    var prompt = `قم بإعادة كتابة وتنسيق هذا المستند بشكل احترافي ورائع باللغة العربية:
+
+العنوان: ${title}
+
+المحتوى:
+${content}
+
+المطلوب:
+1. حسّن الأسلوب والصياغة
+2. قسّم المحتوى إلى أقسام واضحة بعناوين
+3. استخدم النص الغامق للمصطلحات المهمة
+4. أضف نقاط
+5. اجعل المستند متكاملاً ومنسجماً
+
+أعد كتابة المحتوى المنسق فقط بدون أي مقدمة أو تعليق.`;
+
+    var improved = await callGemini(prompt, 2000);
+    var bodyHtml = htmlFromText(improved);
+    var html = buildPrintHTML(title, bodyHtml, font, fontSize, '#1d4ed8', 'classic');
+    window._lastCreateHtml = html;
+
+    document.getElementById('create-result').innerHTML = `
+      <div class="section-card" style="margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><h3>✨ المستند جاهز للطباعة</h3></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-ai" style="padding:8px 18px;font-size:13px;" onclick="openPrintWindow(window._lastCreateHtml)">🖨️ طباعة / PDF</button>
+          </div>
+        </div>
+      </div>`;
+    showToast('✅ تم التنسيق الاحترافي!');
+  } catch(e) {
+    document.getElementById('create-result').innerHTML=`<div class="info-box" style="color:#ef4444;border-color:#fca5a5;background:#fef2f2;">❌ ${e.message}</div>`;
+  } finally {
+    btn.disabled=false; btn.innerHTML='<span class="btn-ai-icon">✨</span><span>تنسيق احترافي بالـ AI</span>';
+  }
+}
+
+// ===================== NUMBER =====================
+function loadNumber(e){numberFile=e.target.files[0];if(numberFile){ if(window.saveFileHistory) window.saveFileHistory(numberFile.name, 'أداة الترقيم'); document.getElementById('number-options').style.display='block';}}
+async function numberPDF(){
+  if(!numberFile)return;showToast('جاري الإضافة...');
+  try{
+    const{PDFDocument,StandardFonts,rgb}=PDFLib;const buf=await numberFile.arrayBuffer();const doc=await PDFDocument.load(buf);
+    const font=await doc.embedFont(StandardFonts.Helvetica);
+    const pos=document.getElementById('number-pos').value;const startN=parseInt(document.getElementById('number-start').value)||1;
+    doc.getPages().forEach((page,i)=>{const{width,height}=page.getSize();const label=String(i+startN);let x=width/2-8,y=25;if(pos.includes('right'))x=width-50;if(pos.includes('left'))x=30;if(pos.includes('top'))y=height-30;try{page.drawText(label,{x,y,size:11,font,color:rgb(0.4,0.4,0.4)});}catch(e){}});
+    const bytes=await doc.save(),blob=new Blob([bytes],{type:'application/pdf'});
+    document.getElementById('number-result').innerHTML=`<div class="success-box" style="margin-top:16px;"><div class="success-icon">✅</div><h2>تم!</h2><div class="success-btns"><button class="btn-success" onclick="saveFile(window._numberBlob,'numbered.pdf')">⬇️ تحميل</button></div></div>`;
+    window._numberBlob=blob;showToast('✅');
+  }catch(e){showToast('❌ '+e.message);}
+}
+
+// ===================== SIGNATURE =====================
+const sigCanvas=document.getElementById('sig-canvas');
+let sigCtx=null;
+if (sigCanvas) {
+  sigCtx=sigCanvas.getContext('2d');
+  let sigDrawing=false,sigLastX=0,sigLastY=0;
+  sigCtx.strokeStyle='#000';sigCtx.lineWidth=2;sigCtx.lineCap='round';sigCtx.lineJoin='round';
+  
+  sigCanvas.addEventListener('mousedown',e=>{sigDrawing=true;const r=sigCanvas.getBoundingClientRect();sigLastX=e.clientX-r.left;sigLastY=e.clientY-r.top;});
+  sigCanvas.addEventListener('mousemove',e=>{if(!sigDrawing)return;const r=sigCanvas.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(x,y);sigCtx.stroke();sigLastX=x;sigLastY=y;});
+  sigCanvas.addEventListener('mouseup',()=>sigDrawing=false);sigCanvas.addEventListener('mouseleave',()=>sigDrawing=false);
+  sigCanvas.addEventListener('touchstart',e=>{e.preventDefault();sigDrawing=true;const r=sigCanvas.getBoundingClientRect();sigLastX=e.touches[0].clientX-r.left;sigLastY=e.touches[0].clientY-r.top;});
+  sigCanvas.addEventListener('touchmove',e=>{e.preventDefault();if(!sigDrawing)return;const r=sigCanvas.getBoundingClientRect();const x=e.touches[0].clientX-r.left,y=e.touches[0].clientY-r.top;sigCtx.beginPath();sigCtx.moveTo(sigLastX,sigLastY);sigCtx.lineTo(x,y);sigCtx.stroke();sigLastX=x;sigLastY=y;});
+  sigCanvas.addEventListener('touchend',()=>sigDrawing=false);
+  
+  window.clearSig=function(){sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);};
+}
+
+function saveSigToLibrary() {
+  if(!sigCanvas) return;
+  const dataUrl = sigCanvas.toDataURL('image/png');
+  // Check if canvas is empty (simplified check)
+  const blank = document.createElement('canvas');
+  blank.width = sigCanvas.width; blank.height = sigCanvas.height;
+  if (dataUrl === blank.toDataURL()) { showToast('⚠️ أرسم توقيعك أولاً'); return; }
+  
+  signLibrary.push(dataUrl);
+  renderSigLibrary();
+  selectSignature(signLibrary.length - 1);
+  showToast('✅ تم حفظ التوقيع في المكتبة');
+}
+
+function renderSigLibrary() {
+  const lib = document.getElementById('sig-library');
+  document.getElementById('sig-library-wrap').style.display = 'block';
+  lib.innerHTML = signLibrary.map((img, i) => `
+    <div class="sig-lib-item" onclick="selectSignature(${i})" style="width:60px;height:40px;border:1px solid #ddd;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:4px;overflow:hidden;">
+      <img src="${img}" style="max-width:100%;max-height:100%;">
+    </div>
+  `).join('');
+}
+
+function selectSignature(i) {
+  currentSignImg = signLibrary[i];
+  document.querySelectorAll('.sig-lib-item').forEach((el, idx) => {
+    el.style.borderColor = idx === i ? '#a855f7' : '#ddd';
+    el.style.boxShadow = idx === i ? '0 0 0 2px rgba(168, 85, 247, 0.2)' : 'none';
+  });
+  updateOverlayIndicator();
+}
+
+function downloadCurrentSig() {
+  if(!currentSignImg) {
+    if(sigCanvas) {
+      const dataUrl = sigCanvas.toDataURL('image/png');
+      const blank = document.createElement('canvas');
+      blank.width = sigCanvas.width; blank.height = sigCanvas.height;
+      if (dataUrl === blank.toDataURL()) { showToast('⚠️ أرسم توقيعاً أولاً'); return; }
+      const a = document.createElement('a'); a.href = dataUrl; a.download = 'signature.png'; a.click();
+    } else { showToast('⚠️ لم يتم العثور على توقيع'); }
+    return;
+  }
+  const a = document.createElement('a'); a.href = currentSignImg; a.download = 'signature.png'; a.click();
+}
+
+async function loadSignPdf(e) {
+  const file = e.target.files[0]; if(!file) return;
+  if(window.saveFileHistory) window.saveFileHistory(file.name, 'توقيع PDF');
+  
+  try {
+    if(!window.pdfjsLib) await initPdfJs();
+    const buf = await file.arrayBuffer();
+    
+    // Core Correction: Add support for fonts/CMaps in signing view
+    const loadingTask = window.pdfjsLib.getDocument({
+      data: buf,
+      cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+      fontExtraProperties: true,
+      disableFontFace: false,
+    });
+    
+    signLibPdfDoc = await PDFLib.PDFDocument.load(buf);
+    signPdfDoc = await loadingTask.promise;
+    
+    document.getElementById('sign-pdf-drop').style.display = 'none';
+    document.getElementById('sign-viewer-wrap').style.display = 'block';
+    document.getElementById('sign-action-panel').style.display = 'block';
+    
+    signCurrentPage = 1;
+    renderSignPage(signCurrentPage);
+  } catch(e) {
+    showToast('❌ '+e.message);
+  }
+}
+
+async function renderSignPage(num) {
+  if(!signPdfDoc) return;
+  const page = await signPdfDoc.getPage(num);
+  const container = document.getElementById('sign-pdf-container');
+  const maxWidth = container.clientWidth - 40;
+  const baseViewport = page.getViewport({scale: 1});
+  signScale = maxWidth / baseViewport.width;
+  if(signScale > 1.2) signScale = 1.2;
+  
+  const outputScale = window.devicePixelRatio || 1;
+  const canvas = document.getElementById('sign-pdf-canvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  
+  const viewport = page.getViewport({scale: signScale * outputScale});
+  canvas.width = Math.floor(viewport.width);
+  canvas.height = Math.floor(viewport.height);
+  canvas.style.width = Math.floor(viewport.width / outputScale) + "px";
+  canvas.style.height = Math.floor(viewport.height / outputScale) + "px";
+  
+  const renderContext = {
+    canvasContext: ctx,
+    viewport: viewport,
+    enableWebGL: true
+  };
+  
+  await page.render(renderContext).promise;
+  document.getElementById('sign-page-info').textContent = `${num} / ${signPdfDoc.numPages}`;
+}
+
+const signCanvasPdf = document.getElementById('sign-pdf-canvas');
+if(signCanvasPdf) {
+  signCanvasPdf.addEventListener('click', (e) => {
+    if(!currentSignImg) { showToast('⚠️ ارسم واختر توقيعاً أولاً'); return; }
+    const r = signCanvasPdf.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    
+    // Convert canvas coords to PDF points
+    // Canvas is rendered at signScale
+    // PDF points are 1/72 inch
+    signPos = { x, y, page: signCurrentPage };
+    updateOverlayIndicator();
+  });
+}
+
+function updateOverlayIndicator() {
+  const indicator = document.getElementById('sign-overlay-indicator');
+  if(!indicator || !signPos.x || !currentSignImg) return;
+  
+  indicator.style.display = 'block';
+  indicator.style.left = (signPos.x - 50) + 'px'; // approx centered
+  indicator.style.top = (signPos.y - 25) + 'px';
+  indicator.style.width = '100px';
+  indicator.style.height = '50px';
+}
+
+function signNextPage(){ if(signPdfDoc && signCurrentPage < signPdfDoc.numPages){ signCurrentPage++; renderSignPage(signCurrentPage); signPos.x=0; document.getElementById('sign-overlay-indicator').style.display='none'; }}
+function signPrevPage(){ if(signPdfDoc && signCurrentPage > 1){ signCurrentPage--; renderSignPage(signCurrentPage); signPos.x=0; document.getElementById('sign-overlay-indicator').style.display='none'; }}
+
+async function embedAndDownload() {
+  if(!signLibPdfDoc || !currentSignImg || !signPos.x) { showToast('⚠️ تأكد من اختيار ملف، توقيع، ومكان التوقيع'); return; }
+  
+  const btn = document.getElementById('btn-sign-embed');
+  btn.disabled = true;
+  showToast('جاري دمج التوقيع...');
+  
+  try {
+    const pages = signLibPdfDoc.getPages();
+    const page = pages[signPos.page - 1];
+    const { width, height } = page.getSize();
+    
+    // Embed the signature image
+    const signatureImage = await signLibPdfDoc.embedPng(currentSignImg);
+    
+    // signPos is in pixels on the preview canvas (signScale)
+    // We need to map signPos (x, y) to PDF coordinates (bottom-left origin)
+    const pdfX = (signPos.x / signScale);
+    const pdfY = height - (signPos.y / signScale); // PDF origin is bottom-left
+    
+    const sigW = 100 / signScale;
+    const sigH = 50 / signScale;
+    
+    page.drawImage(signatureImage, {
+      x: pdfX - (sigW / 2),
+      y: pdfY - (sigH / 2),
+      width: sigW,
+      height: sigH,
+    });
+    
+    const pdfBytes = await signLibPdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    saveFile(blob, 'signed_document.pdf');
+    showToast('✅ تم التوقيع بنجاح!');
+  } catch(e) {
+    showToast('❌ '+e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ===================== ENCRYPT =====================
+function loadEncPdf(e){encpdfFile=e.target.files[0];if(encpdfFile){if(window.saveFileHistory) window.saveFileHistory(encpdfFile.name, 'أداة التشفير'); document.getElementById('encpdf-options').style.display='block';}}
+async function encryptPDF(){showToast('⚠️ تشفير كلمة مرور PDF يتطلب معالجة خادم');document.getElementById('encpdf-result').innerHTML=`<div class="info-box" style="margin-top:16px;">⚠️ تشفير كلمة مرور PDF يتطلب معالجة خادم. استخدم أداة التشفير العسكري بدلاً من ذلك.</div>`;}
+const encPassEl=document.getElementById('enc-pass');if(encPassEl)encPassEl.addEventListener('input',updateStrength);
+function updateStrength(){const v=document.getElementById('enc-pass').value;const segs=[document.getElementById('s1'),document.getElementById('s2'),document.getElementById('s3'),document.getElementById('s4')];let s=0;if(v.length>7)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;const colors=['#ef4444','#f97316','#eab308','#22c55e'],labels=['ضعيفة','متوسطة','جيدة','قوية'];segs.forEach((el,i)=>el.style.background=i<s?colors[s-1]:'var(--border)');document.getElementById('strength-label').textContent=s>0?labels[s-1]:'';}
+async function encryptFile(){
+  const fi=document.getElementById('enc-file');const pass=document.getElementById('enc-pass').value;
+  if(!fi.files[0]||!pass){showToast('يرجى اختيار ملف وكلمة مرور');return;}showToast('جاري التشفير...');
+  try{
+    const file=fi.files[0];
+    if(window.saveFileHistory) window.saveFileHistory(file.name, 'التشفير العسكري');
+    const buf=await file.arrayBuffer();const enc=new TextEncoder();
+    const keyMaterial=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+    const salt=crypto.getRandomValues(new Uint8Array(16));
+    const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt']);
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,buf);
+    const out=new Uint8Array(16+12+encrypted.byteLength);out.set(salt,0);out.set(iv,16);out.set(new Uint8Array(encrypted),28);
+    const blob=new Blob([out],{type:'application/octet-stream'});
+    document.getElementById('enc-result').innerHTML=`<div class="success-box" style="margin-top:16px;"><div class="success-icon">🔒</div><h2>تم التشفير!</h2><div class="success-btns"><button class="btn-success" onclick="saveFile(window._encBlob,'${file.name}.enc')">⬇️ تحميل</button></div></div>`;
+    window._encBlob=blob;showToast('✅ AES-256-GCM');
+  }catch(e){showToast('❌ '+e.message);}
+}
+async function decryptFile(){
+  const fi=document.getElementById('dec-file');const pass=document.getElementById('dec-pass').value;
+  if(!fi.files[0]||!pass){showToast('يرجى اختيار ملف وكلمة مرور');return;}showToast('جاري فك التشفير...');
+  try{
+    if(window.saveFileHistory) window.saveFileHistory(fi.files[0].name, 'فك التشفير العسكري');
+    const buf=await fi.files[0].arrayBuffer();const data=new Uint8Array(buf);
+    const salt=data.slice(0,16),iv=data.slice(16,28),encrypted=data.slice(28);
+    const enc=new TextEncoder();
+    const keyMaterial=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+    const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['decrypt']);
+    const decrypted=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,encrypted);
+    const origName=fi.files[0].name.replace('.enc','');const blob=new Blob([decrypted]);
+    document.getElementById('enc-result').innerHTML=`<div class="success-box" style="margin-top:16px;"><div class="success-icon">🔓</div><h2>تم فك التشفير!</h2><div class="success-btns"><button class="btn-success" onclick="saveFile(window._decBlob,'${origName}')">⬇️ تحميل</button></div></div>`;
+    window._decBlob=blob;showToast('✅');
+  }catch(e){showToast('❌ كلمة مرور خاطئة أو ملف تالف');}
+}
+
+// ===================== ORGANIZE =====================
+function loadOrganize(e){orgFile=e.target.files[0];if(orgFile){if(window.saveFileHistory) window.saveFileHistory(orgFile.name, 'أداة التنظيم'); setupOrganize();}}
+async function setupOrganize(){
+  const{PDFDocument}=PDFLib;const buf=await orgFile.arrayBuffer();const doc=await PDFDocument.load(buf);
+  const n=doc.getPageCount();orgPages=Array.from({length:n},(_,i)=>i);window._orgDoc=doc;
+  renderOrgGrid();document.getElementById('org-drop').style.display='none';document.getElementById('org-area').style.display='block';
+}
+function renderOrgGrid(){
+  const grid=document.getElementById('org-grid');
+  grid.innerHTML=orgPages.map((orig,pos)=>`<div class="thumb-card" draggable="true" data-pos="${pos}" ondragstart="orgDragStart(event)" ondragover="orgDragOver(event)" ondrop="orgDrop(event,${pos})"><div class="thumb-placeholder">📄</div><div class="thumb-num">صفحة ${orig+1}</div><button onclick="deleteOrgPage(${pos})" style="position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;border:none;border-radius:6px;width:20px;height:20px;cursor:pointer;font-size:11px;">✖</button></div>`).join('');
+}
+let orgDragIdx=null;
+function orgDragStart(e){orgDragIdx=parseInt(e.currentTarget.dataset.pos);}
+function orgDragOver(e){e.preventDefault();}
+function orgDrop(e,toPos){if(orgDragIdx===null||orgDragIdx===toPos)return;const m=orgPages.splice(orgDragIdx,1)[0];orgPages.splice(toPos,0,m);orgDragIdx=null;renderOrgGrid();}
+function deleteOrgPage(pos){orgPages.splice(pos,1);renderOrgGrid();}
+async function applyOrganize(){
+  if(!window._orgDoc)return;showToast('جاري الحفظ...');
+  try{
+    const{PDFDocument}=PDFLib;const newDoc=await PDFDocument.create();
+    const pages=await newDoc.copyPages(window._orgDoc,orgPages);pages.forEach(p=>newDoc.addPage(p));
+    const bytes=await newDoc.save(),blob=new Blob([bytes],{type:'application/pdf'});
+    document.getElementById('org-result').innerHTML=`<div class="success-box" style="margin-top:16px;"><div class="success-icon">✅</div><h2>تم الحفظ!</h2><div class="success-btns"><button class="btn-success" onclick="saveFile(window._orgBlob,'organized.pdf')">⬇️ تحميل</button></div></div>`;
+    window._orgBlob=blob;showToast('✅');
+  }catch(e){showToast('❌ '+e.message);}
+}
+
+const templates={
+  cv:{title:'السيرة الذاتية',content:`الاسم: [اسمك الكامل]\nالبريد: example@email.com\n\n## الخبرات\n- [المسمى الوظيفي]\n\n## المهارات\n- المهارة 1 | المهارة 2`},
+  invoice:{title:'الفاتورة التجارية',content:`فاتورة رقم: INV-001\nالتاريخ: 2025-01-01\n\n## الإجمالي\n**المجموع: 200 ر.س**`},
+  letter:{title:'الخطاب الرسمي',content:`التاريخ: 2025/01/01\n\nالسيد/السيدة [الاسم]\n\n## الموضوع\n[موضوع الخطاب]`},
+  report:{title:'تقرير العمل الأسبوعي',content:`تقرير الأسبوع: [التاريخ]\n\n## الإنجازات\n- تم إنجاز [المهمة الأولى]`},
+  contract:{title:'عقد العمل',content:`## أطراف العقد\n**صاحب العمل:** [اسم الشركة]\n**الموظف:** [اسم الموظف]`},
+  proposal:{title:'عرض مشروع',content:`## الملخص التنفيذي\n[وصف موجز للمشروع]`}
+};
+function useTemplate(id){
+  const t=templates[id];if(!t)return;
+  document.getElementById('template-title').textContent=t.title;
+  document.getElementById('template-content').value=t.content;
+  document.getElementById('template-editor').style.display='block';
+  document.getElementById('template-editor').scrollIntoView({behavior:'smooth'});
+}
+function exportTemplate(){
+  const content=document.getElementById('template-content').value;
+  const title=document.getElementById('template-title').textContent;
+  var bodyHtml=htmlFromText(content);
+  var html=buildPrintHTML(title,bodyHtml,'Cairo','13','#1d4ed8','classic');
+  var ok=openPrintWindow(html);
+  if(ok)showToast('✅ افتحت نافذة المعاينة');
+}
+
+async function callGemini(prompt, maxTokens=2000) {
+  if (!window.currentUser) {
+    showToast('❌ يجب تسجيل الدخول عبر حساب جوجل أولاً');
+    throw new Error('غير مصرح - الرجاء تسجيل الدخول.');
+  }
+
+  const res = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, maxTokens })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.result || '';
+}
+
+async function extractPdfText(file,maxChars=12000){
+  if(!window.pdfjsLib){
+    await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+  const buf=await file.arrayBuffer();
+  const pdf=await window.pdfjsLib.getDocument({
+    data:buf,
+    cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+    cMapPacked: true,
+    standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+  }).promise;
+  let text='';
+  for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(' ')+'\n';if(text.length>=maxChars)break;}
+  return text.trim().substring(0,maxChars);
+}
+
+// ===================== SUMMARIZE =====================
+function handleSumFile(file){if(!file)return;sumFile=file; if(window.saveFileHistory) window.saveFileHistory(file.name, 'أداة التلخيص الذكي'); document.getElementById('sum-file-name').textContent='📄 '+file.name;document.getElementById('sum-file-info').style.display='block';document.getElementById('sum-dz').style.display='none';}
+async function runSummarize(){
+  if(!sumFile)return;
+  document.getElementById('sum-result').innerHTML='<div class="ai-loading"><div class="spinner"></div><p>جاري استخراج النص وتلخيصه...</p></div>';
+  try{
+    const text=await extractPdfText(sumFile);if(text.length<30)throw new Error('لم نتمكن من استخراج نص كافٍ.');
+    const type=document.getElementById('sum-type').value;
+    const inst={short:'لخص في 5-7 نقاط رئيسية',detailed:'اكتب ملخصاً تفصيلياً',bullets:'حوّل إلى قائمة نقاط منظمة'};
+    const result=await callGemini(inst[type]+':\n\n'+text,1500);
+    window._sumResult=result;window._sumFileName=sumFile.name.replace(/\.pdf$/i,'');
+    document.getElementById('sum-result').innerHTML=`<div class="section-card" style="margin-top:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3>🧠 الملخص</h3><div style="display:flex;gap:8px;"><button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="copyText('sum-text')">📋 نسخ</button><button class="btn-primary" style="padding:6px 12px;font-size:12px;" onclick="exportSummaryPDF()">⬇️ PDF</button></div></div><div class="ai-result-box" id="sum-text">${result.replace(/\n/g,'<br>')}</div></div>`;
+  }catch(e){document.getElementById('sum-result').innerHTML=`<div class="info-box" style="color:#ef4444;border-color:#fca5a5;background:#fef2f2;">❌ ${e.message}</div>`;}
+}
+function exportSummaryPDF(){
+  if(!window._sumResult)return;
+  var html=buildPrintHTML('ملخص: '+(window._sumFileName||'ملخص'),htmlFromText(window._sumResult),'Cairo','13','#1d4ed8','classic');
+  openPrintWindow(html);showToast('✅ افتحت نافذة المعاينة');
+}
+
+// ===================== STUDYNOTE =====================
+let studynoteFile = null;
+function handleStudynoteFile(file){
+  if(!file)return;
+  studynoteFile=file; 
+  if(window.saveFileHistory) window.saveFileHistory(file.name, 'مذكرة من كتاب'); 
+  document.getElementById('studynote-file-name').textContent='📄 '+file.name;
+  document.getElementById('studynote-file-info').style.display='block';
+  document.getElementById('studynote-dz').style.display='none';
+}
+async function runStudynote(){
+  if(!studynoteFile)return;
+  document.getElementById('studynote-result').innerHTML='<div class="ai-loading"><div class="spinner"></div><p>جاري تحليل الكتاب وإنشاء المذكرة والأسئلة...</p></div>';
+  try{
+    const text=await extractPdfText(studynoteFile, 15000);
+    if(text.length<30)throw new Error('لم نتمكن من استخراج نص كافٍ.');
+    const prompt = `أنت معلم خبير وصانع محتوى تعليمي. بناءً على النص التالي المستخرج من كتاب أو ملف تعليمي، قم بإعداد مذكرة منظمة للطلاب تتضمن:
+1. ملخص واضح لأهم المفاهيم والأفكار مستخدما نقاط والتنسيق الجيد.
+2. أسئلة متوقعة تغطي أهم أجزاء النص (5 أسئلة اختيار من متعدد، 5 أسئلة صح وخطأ، 3 أسئلة مقالية قصيرة).
+3. إجابات نموذجية واضحة للأسئلة في نهاية المذكرة مفصولة بخط.
+النص:
+${text}`;
+    const result=await callGemini(prompt, 3000);
+    window._studynoteResult=result;window._studynoteFileName=studynoteFile.name.replace(/\.pdf$/i,'');
+    document.getElementById('studynote-result').innerHTML=`<div class="section-card" style="margin-top:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3>📚 المذكرة</h3><div style="display:flex;gap:8px;"><button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="copyText('studynote-text')">📋 نسخ</button><button class="btn-primary" style="padding:6px 12px;font-size:12px;" onclick="exportStudynotePDF()">⬇️ PDF</button></div></div><div class="ai-result-box" id="studynote-text">${result.replace(/\n/g,'<br>')}</div></div>`;
+  }catch(e){
+    document.getElementById('studynote-result').innerHTML=`<div class="info-box" style="color:#ef4444;border-color:#fca5a5;background:#fef2f2;">❌ ${e.message}</div>`;
+  }
+}
+function exportStudynotePDF(){
+  if(!window._studynoteResult)return;
+  var html=buildPrintHTML('مذكرة: '+(window._studynoteFileName||''),htmlFromText(window._studynoteResult),'Cairo','13','#ef4444','classic');
+  openPrintWindow(html);showToast('✅ افتحت نافذة المعاينة');
+}
+
+// ===================== OCR =====================
+async function handleOcrFile(file){
+  if(!file)return;
+  if(window.saveFileHistory) window.saveFileHistory(file.name, 'استخراج نصوص OCR');
+  document.getElementById('ocr-dz').style.display='none';
+  document.getElementById('ocr-result').innerHTML='<div class="ai-loading"><div class="spinner"></div><p>جاري التحميل...</p></div>';
+  try{
+    if(!window.Tesseract){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';document.head.appendChild(s);await new Promise((res,rej)=>{s.onload=res;s.onerror=rej;});}
+    const worker=await Tesseract.createWorker(['ara','eng'],1,{logger:m=>{if(m.status==='recognizing text')document.querySelector('#ocr-result p').textContent=`جاري المعالجة: ${Math.round(m.progress*100)}%`;}});
+    const{data:{text}}=await worker.recognize(file);await worker.terminate();
+    document.getElementById('ocr-result').innerHTML=`<div class="section-card" style="margin-top:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3>📝 النص المستخرج</h3><button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="copyText('ocr-text')">📋 نسخ</button></div><div class="ai-result-box" id="ocr-text">${text||'لم يتم العثور على نص'}</div></div>`;
+  }catch(e){document.getElementById('ocr-result').innerHTML=`<div class="info-box" style="color:#ef4444;">❌ ${e.message}</div>`;document.getElementById('ocr-dz').style.display='block';}
+}
+
+// ===================== CHAT =====================
+function handleChatFile(file){if(!file)return;chatFile=file;chatHistory=[];chatPdfText=''; if(window.saveFileHistory) window.saveFileHistory(file.name, 'تحدث مع PDF'); document.getElementById('chat-dz').style.display='none';document.getElementById('chat-area').style.display='block';document.getElementById('chat-file-name').textContent='📄 '+file.name;document.getElementById('chat-messages').innerHTML=`<div class="chat-msg ai">مرحباً! رفعت <strong>${file.name}</strong>. اسألني أي سؤال عنه.</div>`;}
+function resetChat(){chatFile=null;chatHistory=[];chatPdfText='';document.getElementById('chat-dz').style.display='block';document.getElementById('chat-area').style.display='none';document.getElementById('chat-messages').innerHTML='';}
+async function sendChatMsg(){
+  if(!chatFile)return;
+  const inp=document.getElementById('chat-q');const q=inp.value.trim();if(!q)return;inp.value='';
+  const msgs=document.getElementById('chat-messages');msgs.innerHTML+=`<div class="chat-msg user">${q}</div>`;
+  const t=document.createElement('div');t.className='chat-msg ai';t.innerHTML='<em>جاري التفكير...</em>';msgs.appendChild(t);msgs.scrollTop=msgs.scrollHeight;
+  try{
+    if(!chatPdfText)chatPdfText=await extractPdfText(chatFile,10000);
+    chatHistory.push({role:'user',q});
+    const context=chatHistory.slice(-4).map(h=>`س: ${h.q}\nج: ${h.a||''}`).join('\n');
+    const answer=await callGemini(`أنت مساعد يجيب على أسئلة حول PDF:\n${chatPdfText}\n\n${context}\n\nالسؤال: ${q}`,1000);
+    chatHistory[chatHistory.length-1].a=answer;t.innerHTML=answer.replace(/\n/g,'<br>');msgs.scrollTop=msgs.scrollHeight;
+  }catch(e){t.innerHTML=`❌ ${e.message}`;}
+}
+
+// ===================== TRANSLATE =====================
+function handleTrFile(file){if(!file)return;trFile=file; if(window.saveFileHistory) window.saveFileHistory(file.name, 'ترجمة فورية'); document.getElementById('tr-file-name').textContent='📄 '+file.name;document.getElementById('tr-options').style.display='block';document.getElementById('tr-dz').style.display='none';}
+async function runTranslate(){
+  if(!trFile)return;
+  const lang=document.getElementById('tr-lang').value;
+  document.getElementById('tr-result').innerHTML=`<div class="ai-loading"><div class="spinner"></div><p>جاري الترجمة...</p></div>`;
+  try{
+    const text=await extractPdfText(trFile,8000);if(text.length<20)throw new Error('لم نتمكن من استخراج نص كافٍ.');
+    const result=await callGemini(`ترجم إلى ${lang} بشكل احترافي:\n\n${text}`,2000);
+    document.getElementById('tr-result').innerHTML=`<div class="section-card" style="margin-top:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3>🌐 الترجمة — ${lang}</h3><button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="copyText('tr-text')">📋 نسخ</button></div><div class="ai-result-box" id="tr-text">${result.replace(/\n/g,'<br>')}</div></div>`;
+  }catch(e){document.getElementById('tr-result').innerHTML=`<div class="info-box" style="color:#ef4444;">❌ ${e.message}</div>`;}
+}
+
+// ===================== COMPARE =====================
+function handleCmpFile(file,n){
+  if(!file)return;
+  if(window.saveFileHistory) window.saveFileHistory(file.name, 'مقارنة الملفات');
+  if(n===1){cmpFile1=file;document.getElementById('cmp-name1').textContent='✅ '+file.name;}
+  else{cmpFile2=file;document.getElementById('cmp-name2').textContent='✅ '+file.name;}
+  if(cmpFile1&&cmpFile2)document.getElementById('cmp-action').style.display='flex';
+}
+async function runCompare(){
+  if(!cmpFile1||!cmpFile2)return;
+  document.getElementById('cmp-result').innerHTML='<div class="ai-loading"><div class="spinner"></div><p>جاري المقارنة...</p></div>';
+  try{
+    const[t1,t2]=await Promise.all([extractPdfText(cmpFile1,5000),extractPdfText(cmpFile2,5000)]);
+    const result=await callGemini(`قارن بين هذين الملفين:\nالملف الأول (${cmpFile1.name}):\n${t1}\n\nالملف الثاني (${cmpFile2.name}):\n${t2}\n\nأخبرني: أوجه التشابه، الاختلافات، ما أُضيف، ما حُذف، التقييم العام.`,1500);
+    document.getElementById('cmp-result').innerHTML=`<div class="section-card" style="margin-top:16px;"><h3>📑 نتيجة المقارنة</h3><div class="ai-result-box">${result.replace(/\n/g,'<br>')}</div></div>`;
+  }catch(e){document.getElementById('cmp-result').innerHTML=`<div class="info-box" style="color:#ef4444;">❌ ${e.message}</div>`;}
+}
+
+// ===================== AI CREATE =====================
+async function runAiCreate(){
+  const desc=document.getElementById('aicreate-desc').value.trim();
+  if(!desc){showToast('❌ أدخل وصف الملف');return;}
+  const type=document.getElementById('aic-type').value;
+  const btn=document.getElementById('btn-aic-run');
+  btn.disabled=true;btn.innerHTML='<span class="btn-ai-icon">⏳</span><span>جاري الإنشاء والتنسيق...</span>';
+  document.getElementById('aic-result').innerHTML='<div class="ai-loading"><div class="spinner"></div><p>الذكاء الاصطناعي يُنشئ ويُنسّق مستندك الاحترافي...</p></div>';
+
+  var typeNames={report:'تقرير',letter:'خطاب رسمي',proposal:'عرض مشروع',summary:'ملخص',plan:'خطة عمل',cv:'سيرة ذاتية',other:'مستند'};
+  var typeName=typeNames[type]||'مستند';
+
+  try{
+    var prompt = `أنشئ ${typeName} احترافياً باللغة العربية بناءً على هذا الطلب: "${desc}"
+
+يجب أن يكون المستند منظماً بعناوين واضحة
+أعد المحتوى فقط بدون أي مقدمة.`;
+
+    const result=await callGemini(prompt,2500);
+    var bodyHtml = htmlFromText(result);
+    var html = buildPrintHTML(typeName, bodyHtml, 'Cairo', '13', '#1d4ed8', 'classic');
+    window._lastAicHtml = html;
+
+    document.getElementById('aic-result').innerHTML = `
+      <div class="section-card" style="margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div><h3>✨ ${typeName} جاهز</h3></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-secondary" style="padding:8px 14px;font-size:12px;" onclick="copyText('aic-preview-text')">📋 نسخ</button>
+            <button class="btn-ai" style="padding:8px 18px;font-size:13px;" onclick="openPrintWindow(window._lastAicHtml)">🖨️ طباعة / PDF</button>
+          </div>
+        </div>
+        <div class="ai-result-box" id="aic-preview-text">${result.replace(/\n/g,'<br>')}</div>
+      </div>`;
+  }catch(e){
+    document.getElementById('aic-result').innerHTML=`<div class="info-box" style="color:#ef4444;border-color:#fca5a5;background:#fef2f2;">❌ ${e.message}</div>`;
+  }finally{
+    btn.disabled=false;btn.innerHTML='<span class="btn-ai-icon">✨</span><span>إنشاء وتنسيق احترافي</span>';
+  }
+}
+
+// ===================== UTILS =====================
+function copyText(id){const el=document.getElementById(id);if(!el)return;const text=el.innerText;if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>showToast('✅ تم النسخ')).catch(()=>fallbackCopy(text));}else fallbackCopy(text);}
+function fallbackCopy(text){try{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;top:-9999px;left:-9999px;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();const ok=document.execCommand('copy');document.body.removeChild(ta);showToast(ok?'✅ تم النسخ':'❌ فشل النسخ');}catch(e){showToast('❌ فشل النسخ');}}
+function saveFile(blob, name) {
+  const url = URL.createObjectURL(blob);
+  if (window.median && window.median.open) {
+      window.median.open.browser({url: url});
+  } else {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+</script>
+</body>
+</html>
