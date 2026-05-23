@@ -1,15 +1,21 @@
+/// <reference path="./src/global.d.ts" />
+import 'dotenv/config';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import cors from 'cors';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import cookieParser from 'cookie-parser';
+import { OAuth2Client } from 'google-auth-library';
+import jwt from 'jsonwebtoken';
+import { getGemini, handleGeminiError } from './src/lib/gemini.js';
 import { validateAiPrompt } from './lib/validators.js';
 
 import { extractTextPipeline } from './src/lib/pdfPipeline.js';
 import { vectorizeAndStore } from './src/lib/ragVectorStore.js';
 import { answerQuestionWithRAG } from './src/lib/geminiCaching.js';
+import { upsertUser, getUserById, User, saveFileHistory, getFileHistory } from './src/lib/db.js';
 
 const app = express();
 
@@ -37,6 +43,7 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '1mb' })); // Limit body size to 1MB
+app.use(cookieParser());
 
 // 1. Security Headers
 app.use((req, res, next) => {
@@ -100,10 +107,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Initialize Gemini backend-side
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
 app.post('/api/gemini', async (req, res) => {
   try {
     const contentType = req.headers['content-type'];
@@ -114,22 +117,75 @@ app.post('/api/gemini', async (req, res) => {
     const { prompt, maxTokens } = req.body;
     const cleanPrompt = validateAiPrompt(prompt);
     
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: "Gemini API key is not configured on the server." });
-    }
+    const ai = getGemini();
 
-    const result = await model.generateContent({
+    const result = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
       contents: [{ role: 'user', parts: [{ text: cleanPrompt }] }],
-      generationConfig: {
-        maxOutputTokens: maxTokens || 2000,
+      config: {
+        maxOutputTokens: 8192,
       }
     });
 
-    const response = await result.response;
-    res.json({ result: response.text() });
+    res.json({ result: result.text || '' });
   } catch (error: any) {
-    console.error('API Error:', error.message);
-    res.status(500).json({ error: 'حدث خطأ، حاول مرة أخرى' });
+    const friendlyError = handleGeminiError(error);
+    res.status(500).json({ error: friendlyError.message });
+  }
+});
+
+// ==========================================
+// OCR Endpoint (Supports PDF and Images with Arabic support via Gemini)
+// ==========================================
+app.post('/api/ocr', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'الرجاء إرفاق ملف للـ OCR (صورة أو PDF).' });
+    }
+
+    const filePath = req.file.path;
+    const isPdf = req.file.mimetype === 'application/pdf' || req.file.originalname.toLowerCase().endsWith('.pdf');
+    let extractedText = '';
+
+    if (isPdf) {
+      // PDF (Triage uses pdf-parse, if scanned uses Gemini 3.5 OCR)
+      extractedText = await extractTextPipeline(filePath);
+    } else {
+      // Image (Use Gemini-3.5-flash for perfect Arabic/English OCR)
+      const dataBuffer = fs.readFileSync(filePath);
+      const base64Data = dataBuffer.toString('base64');
+      const ai = getGemini();
+
+      const result = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: req.file.mimetype || 'image/jpeg'
+            }
+          },
+          { text: "أنت خبير OCR دقيق جداً وملتزم بنقل النص كما هو بالتفصيل. استخرج جميع النصوص من هذه الصورة بدقة متناهية كما هي وبأكملها، سواء كانت باللغة العربية أو الإنجليزية. لا تضف أي تعليقات توضيحية، ولا تقم بتلخيص أو حذف أي شيء من النص. فقط أرجع النص الأصلي بالكامل وبنفس التنسيق." }
+        ]
+      });
+      extractedText = result.text || '';
+    }
+
+    // Clean up uploaded file
+    try {
+      fs.unlinkSync(filePath);
+    } catch (e) {
+      console.error('Failed to delete temp file:', e);
+    }
+
+    res.json({ text: extractedText });
+  } catch (error: any) {
+    // try to delete temp file if still there
+    if (req.file && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+    }
+    const friendlyError = handleGeminiError(error);
+    res.status(500).json({ error: friendlyError.message });
   }
 });
 
@@ -158,8 +214,8 @@ app.post('/api/pipeline/upload', upload.single('file'), async (req, res) => {
 
     res.json({ success: true, documentId, message: 'تم معالجة الملف وتخزينه بنجاح!' });
   } catch (error: any) {
-    console.error('Pipeline Upload Error:', error);
-    res.status(500).json({ error: error.message || 'حدث خطأ أثناء معالجة الملف' });
+    const friendlyError = handleGeminiError(error);
+    res.status(500).json({ error: friendlyError.message });
   }
 });
 
@@ -177,8 +233,165 @@ app.post('/api/pipeline/ask', async (req, res) => {
 
     res.json({ answer });
   } catch (error: any) {
-    console.error('Pipeline Ask Error:', error);
-    res.status(500).json({ error: error.message || 'حدث خطأ أثناء الاستعلام' });
+    const friendlyError = handleGeminiError(error);
+    res.status(500).json({ error: friendlyError.message });
+  }
+});
+
+// ==========================================
+// Auth Routes (Google OAuth)
+// ==========================================
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+app.get('/api/config', (req, res) => {
+  res.json({
+    googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+  });
+});
+
+app.post('/api/auth/google', async (req, res) => {
+  const { credential, firebaseUid } = req.body;
+  if (!credential) {
+    return res.status(400).json({ error: 'Token is missing' });
+  }
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    if (!payload) {
+      return res.status(400).json({ error: 'Invalid token payload' });
+    }
+
+    const { sub: id, name, email, picture } = payload;
+    
+    if (!id || !name || !email) {
+      return res.status(400).json({ error: 'Incomplete user data from Google' });
+    }
+
+    const userId = firebaseUid || id;
+    const user: User = { id: userId, name, email, picture: picture || '' };
+    
+    // حفظ أو تحديث بيانات المستخدم في قاعدة البيانات
+    upsertUser(user);
+
+    // إنشاء جلسة (JWT)
+    const jwtSecret = process.env.JWT_SECRET || 'default_secret_for_development_only';
+    const sessionToken = jwt.sign({ userId }, jwtSecret, { expiresIn: '7d' });
+
+    // إعداد الكوكيز 
+    res.cookie('session', sessionToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 أيام
+    });
+
+    res.json({ success: true, user });
+  } catch (error: any) {
+    console.error('Google Auth Error:', error.message);
+    res.status(401).json({ error: 'فشل التحقق من Google Token' });
+  }
+});
+
+app.post('/api/auth/demo', async (req, res) => {
+  try {
+    const { firebaseUid } = req.body;
+    const userId = firebaseUid || 'demo-user-id';
+    const demoUser: User = {
+      id: userId,
+      name: 'مستخدم تجريبي',
+      email: firebaseUid ? `${firebaseUid}@internal.pdfsmart.com` : 'demo@internal.pdfsmart.com',
+      picture: 'https://lh3.googleusercontent.com/a/default-user'
+    };
+    
+    upsertUser(demoUser);
+
+    const jwtSecret = process.env.JWT_SECRET || 'default_secret_for_development_only';
+    const sessionToken = jwt.sign({ userId: demoUser.id }, jwtSecret, { expiresIn: '7d' });
+
+    res.cookie('session', sessionToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({ success: true, user: demoUser });
+  } catch (error: any) {
+    console.error('Demo login error:', error);
+    res.status(500).json({ error: 'Fails to login with demo' });
+  }
+});
+
+// Middleware للتحقق من الجلسة
+const requireAuth = (req: any, res: any, next: any) => {
+  const token = req.cookies.session;
+  if (!token) return res.status(401).json({ error: 'غير مصرح' });
+
+  try {
+    const jwtSecret = process.env.JWT_SECRET || 'default_secret_for_development_only';
+    const decoded: any = jwt.verify(token, jwtSecret);
+    req.userId = decoded.userId;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'جلسة غير صالحة' });
+  }
+};
+
+app.get('/api/auth/me', requireAuth, (req: any, res: any) => {
+  const user = getUserById(req.userId);
+  if (!user) {
+    return res.status(404).json({ error: 'المستخدم غير موجود' });
+  }
+  res.json({ user });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  res.clearCookie('session', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
+  });
+  res.json({ success: true });
+});
+
+app.get('/api/history', requireAuth, (req: any, res: any) => {
+  try {
+    const historyDb = getFileHistory(req.userId);
+    const history = historyDb.map(item => {
+      // Parse ISO UTC string ('YYYY-MM-DD HH:MM:SS') consistently
+      const d = new Date(item.timestamp.replace(' ', 'T') + 'Z');
+      const seconds = Math.floor(d.getTime() / 1000);
+      return {
+        id: String(item.id),
+        uid: item.uid,
+        fileName: item.fileName,
+        toolName: item.toolName,
+        timestamp: { seconds }
+      };
+    });
+    res.json({ success: true, history });
+  } catch (error: any) {
+    console.error("Error fetching history from SQLite:", error);
+    res.status(500).json({ error: "Failed to fetch file history" });
+  }
+});
+
+app.post('/api/history', requireAuth, (req: any, res: any) => {
+  const { fileName, toolName } = req.body;
+  if (!fileName || !toolName) {
+    return res.status(400).json({ error: "fileName and toolName are required" });
+  }
+  try {
+    saveFileHistory(req.userId, fileName, toolName);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Error saving history to SQLite:", error);
+    res.status(500).json({ error: "Failed to save file history" });
   }
 });
 

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول</title>
+</head>
+<body style="background: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+  <div style="font-family: sans-serif; text-align: center; color: #334155; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+    <h3 style="margin-top: 0;">جاري معالجة تسجيل الدخول...</h3>
+    <p style="color: #64748b; font-size: 14px;">سيتم إغلاق هذه النافذة تلقائياً.</p>
+  </div>
+  <script>
+    try {
+      const hash = window.location.hash || '';
+      const query = window.location.search || '';
+      
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const queryParams = new URLSearchParams(query);
+      
+      const idToken = hashParams.get('id_token') || queryParams.get('id_token') || hashParams.get('credential') || queryParams.get('credential');
+      
+      if (idToken && window.opener) {
+        window.opener.postMessage({ type: 'GOOGLE_IMPLICIT_SUCCESS', idToken: idToken }, '*');
+        setTimeout(() => { window.close(); }, 200);
+      } else {
+        console.warn("No token found in hash/query or opener window is null");
+        setTimeout(() => { window.close(); }, 2000);
+      }
+    } catch (e) {
+      console.error("Auth callback error:", e);
+      setTimeout(() => { window.close(); }, 2000);
+    }
+  </script>
+</body>
+</html>

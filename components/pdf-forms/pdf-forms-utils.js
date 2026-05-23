@@ -33,11 +33,20 @@ export async function generateInteractivePDF(formConfig) {
   const { fields, pageSize = [595, 842], formName } = formConfig;
 
   const pdfDoc = await PDFDocument.create();
-  pdfDoc.registerFontkit(fontkit);
+  pdfDoc.registerFontkit(fontkit.default || fontkit);
 
-  const fontUrl = 'https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp0ij0R2.woff2';
-  const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
-  const arabicFont = await pdfDoc.embedFont(fontBytes);
+  let arabicFont;
+  try {
+    const fontUrl = '/fonts/Cairo.ttf';
+    const fontBytes = await fetch(fontUrl).then(r => {
+      if (!r.ok) throw new Error('Font fetch failed');
+      return r.arrayBuffer();
+    });
+    arabicFont = await pdfDoc.embedFont(fontBytes);
+  } catch (fontErr) {
+    console.warn("Falling back to standard font - Arabic might not render correctly", fontErr);
+    arabicFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  }
 
   const page = pdfDoc.addPage(pageSize);
   const form = pdfDoc.getForm();
@@ -151,7 +160,12 @@ export async function generateInteractivePDF(formConfig) {
   pdfDoc.setLanguage('ar');
   pdfDoc.setCreator('PDF Forms Builder');
 
-  const pdfBytes = await pdfDoc.save();
+  try {
+    const form = pdfDoc.getForm();
+    form.updateFieldAppearances(arabicFont);
+  } catch (e) {}
+
+  const pdfBytes = await pdfDoc.save({ updateFieldAppearances: false });
   return pdfBytes;
 }
 
@@ -159,11 +173,20 @@ export async function generateInteractivePDF(formConfig) {
 export async function fillExistingPDF(pdfFile, fields, formData) {
   const existingPdfBytes = await pdfFile.arrayBuffer();
   const pdfDoc = await PDFDocument.load(existingPdfBytes);
-  pdfDoc.registerFontkit(fontkit);
+  pdfDoc.registerFontkit(fontkit.default || fontkit);
 
-  const fontUrl = 'https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp0ij0R2.woff2';
-  const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
-  const arabicFont = await pdfDoc.embedFont(fontBytes);
+  let arabicFont;
+  try {
+    const fontUrl = '/fonts/Cairo.ttf';
+    const fontBytes = await fetch(fontUrl).then(r => {
+      if (!r.ok) throw new Error('Font fetch failed');
+      return r.arrayBuffer();
+    });
+    arabicFont = await pdfDoc.embedFont(fontBytes);
+  } catch (fontErr) {
+    console.warn("Falling back to standard font - Arabic might not render correctly", fontErr);
+    arabicFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  }
 
   const pages = pdfDoc.getPages();
   const firstPage = pages[0];
@@ -176,14 +199,24 @@ export async function fillExistingPDF(pdfFile, fields, formData) {
       const fieldName = field.getName();
       if (formData[fieldName] !== undefined) {
         if (field.constructor.name === 'PDFTextField') {
-          field.setText(String(formData[fieldName]));
+          try {
+            field.setText(reverseArabicText(String(formData[fieldName])));
+            field.updateAppearances({ font: arabicFont });
+          } catch(err) {
+            console.warn("Could not set text/appearance for existing field", err);
+          }
         } else if (field.constructor.name === 'PDFCheckBox') {
           formData[fieldName] ? field.check() : field.uncheck();
         } else if (field.constructor.name === 'PDFDropdown') {
-          field.select(formData[fieldName]);
+          try { field.select(formData[fieldName]); } catch(e){}
         }
       }
     });
+    try {
+      form.updateFieldAppearances(arabicFont);
+    } catch(err) {
+      console.warn("Form field appearance update failed", err);
+    }
   } catch (e) {
     // No existing AcroForm
   }
@@ -205,7 +238,7 @@ export async function fillExistingPDF(pdfFile, fields, formData) {
     // Handle other types as needed
   }
 
-  const pdfBytes = await pdfDoc.save();
+  const pdfBytes = await pdfDoc.save({ updateFieldAppearances: false });
   return pdfBytes;
 }
 

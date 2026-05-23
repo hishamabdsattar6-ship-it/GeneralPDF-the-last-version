@@ -1,5 +1,5 @@
 import { Pinecone } from '@pinecone-database/pinecone';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getGemini } from './gemini.js';
 
 let pcCache: Pinecone | null = null;
 function getPinecone(): Pinecone {
@@ -15,9 +15,7 @@ function getPinecone(): Pinecone {
 }
 const indexName = 'generalpdf-index'; // يجب إنشاء هذا الـ Index سلفاً في لوحة تحكم Pinecone بأبعاد 768
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-// نستخدم نموذج text-embedding-004 المخصص من Google لإنشاء المتجهات (Embeddings)
-const embeddingModel = genAI.getGenerativeModel({ model: "text-embedding-004" });
+// We use getGemini() lazily to access GoogleGenAI client
 
 /**
  * دالة ذكية لتقسيم النص الطويل (Chunking) مع الاحتفاظ بالسياق الزمني (Overlap)
@@ -54,21 +52,32 @@ export async function vectorizeAndStore(text: string, fileId: string) {
   for (let i = 0; i < chunks.length; i += batchSize) {
     const batchChunks = chunks.slice(i, i + batchSize);
     
-    // 1. توليد المتجهات (Embeddings) عبر Gemini API
-    const vectors = await Promise.all(
-        batchChunks.map(async (chunk, idx) => {
-            const result = await embeddingModel.embedContent(chunk);
-            return {
-                id: `${fileId}-chunk-${i + idx}`,
-                values: result.embedding.values, // مصفوفة الأرقام التي تمثل سياق النص
-                metadata: {
-                    fileId: fileId,
-                    text: chunk,      // نحفظ النص الأصلي لجلبه لاحقاً
-                    chunkIndex: i + idx
-                }
-            };
-        })
-    );
+    // 1. توليد المتجهات (Embeddings) عبر Gemini API دفعة واحدة
+    const ai = getGemini();
+    const result = await ai.models.embedContent({
+      model: 'text-embedding-004',
+      contents: batchChunks,
+    });
+    
+    if (!result.embeddings) {
+      throw new Error('فشل توليد المتجهات من خادم Gemini');
+    }
+
+    const vectors = batchChunks.map((chunk, idx) => {
+      const embedding = result.embeddings ? result.embeddings[idx] : null;
+      if (!embedding || !embedding.values) {
+        throw new Error(`فشل استرجاع متجه للفرع رقم ${idx}`);
+      }
+      return {
+        id: `${fileId}-chunk-${i + idx}`,
+        values: embedding.values, // مصفوفة الأرقام التي تمثل سياق النص
+        metadata: {
+          fileId: fileId,
+          text: chunk,      // نحفظ النص الأصلي لجلبه لاحقاً
+          chunkIndex: i + idx
+        }
+      };
+    });
     
     // 2. إرسال المتجهات دفعة واحدة لقاعدة بينات Pinecone
     // @ts-ignore - Pinecone client types can vary
@@ -85,12 +94,21 @@ export async function vectorizeAndStore(text: string, fileId: string) {
  */
 export async function searchInVectorDB(question: string, fileId: string, topK = 5): Promise<string> {
   // 1. تحويل سؤال المستخدم لمتجه
-  const queryEmbedding = await embeddingModel.embedContent(question);
+  const ai = getGemini();
+  const result = await ai.models.embedContent({
+    model: 'text-embedding-004',
+    contents: question,
+  });
+  
+  const queryValues = result.embeddings?.[0]?.values;
+  if (!queryValues) {
+    throw new Error('فشل توليد متجه لسؤال المستخدم.');
+  }
   
   // 2. البحث في Pinecone عن أقرب الأجزاء ذات الصلة حصراً (Semantic Search)
   const index = getPinecone().Index(indexName);
   const queryResponse = await index.query({
-    vector: queryEmbedding.embedding.values,
+    vector: queryValues,
     topK: topK, // نجلب أفضل 5 نتائج مطابقة
     includeMetadata: true,
     filter: {

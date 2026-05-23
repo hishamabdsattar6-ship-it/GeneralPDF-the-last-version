@@ -1,9 +1,5 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GoogleAICacheManager } from '@google/generative-ai/server';
+import { getGemini } from './gemini.js';
 import { searchInVectorDB } from './ragVectorStore.js';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const cacheManager = new GoogleAICacheManager(process.env.GEMINI_API_KEY || '');
 
 /**
  * -------------------------------------------------------------
@@ -15,20 +11,21 @@ const cacheManager = new GoogleAICacheManager(process.env.GEMINI_API_KEY || '');
 export async function createDocumentCache(documentText: string, displayName: string = 'Large-Doc-Cache') {
   console.log('انشاء كاش جديد للمستند عبر Gemini Context Caching...');
   
-  // مدة الصلاحية التلقائية للكاش (TTL) - مثلاً 60 دقيقة
+  const ai = getGemini();
   const ttlSeconds = 60 * 60; 
 
-  const cache = await cacheManager.create({
-    model: 'models/gemini-1.5-flash-002', 
-    displayName: displayName,
-    systemInstruction: 'أنت مساعد ذكي ومحترف، أجب من المعطيات فقط.',
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: documentText }],
-      },
-    ],
-    ttlSeconds,
+  const cache = await ai.caches.create({
+    model: 'gemini-3.5-flash', 
+    config: {
+      displayName: displayName,
+      ttl: `${ttlSeconds}s`,
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: documentText }],
+        },
+      ],
+    }
   });
 
   console.log(`تم الكاش بنجاح! Cache Name: ${cache.name}`);
@@ -36,13 +33,16 @@ export async function createDocumentCache(documentText: string, displayName: str
 }
 
 export async function askQuestionWithCache(cacheName: string, question: string) {
-  // ننشئ النموذج مع ربطه باسم الكاش الذي تم توليده
-  const model = genAI.getGenerativeModelFromCachedContent(
-    await cacheManager.get(cacheName)
-  );
+  const ai = getGemini();
+  const result = await ai.models.generateContent({
+    model: 'gemini-3.5-flash',
+    contents: question,
+    config: {
+      cachedContent: cacheName
+    }
+  });
 
-  const result = await model.generateContent(question);
-  return result.response.text();
+  return result.text || '';
 }
 
 /**
@@ -74,8 +74,11 @@ ${relevantContext}
 [سؤال المستخدم]:
 ${question}`;
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const result = await model.generateContent(prompt);
+  const ai = getGemini();
+  const result = await ai.models.generateContent({
+    model: 'gemini-3.5-flash',
+    contents: prompt
+  });
   
-  return result.response.text();
+  return result.text || '';
 }

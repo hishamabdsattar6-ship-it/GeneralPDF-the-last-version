@@ -717,6 +717,7 @@
       <h3>ارفع ملف PDF للتلخيص</h3>
       <p>يستخرج الذكاء الاصطناعي النقاط الرئيسية في ثوانٍ</p>
     </div>
+    <div class="recent-files-container" data-tool="summarize"></div>
     <div id="sum-file-info" style="display:none;" class="section-card">
       <h3 id="sum-file-name"></h3>
       <div class="form-group" style="margin-top:12px;">
@@ -747,6 +748,7 @@
       <h3>ارفع الكتاب أو الملف</h3>
       <p>يتم تحليل الكتاب لإنشاء مذكرة وأسئلة متوقعة</p>
     </div>
+    <div class="recent-files-container" data-tool="studynote"></div>
     <div id="studynote-file-info" style="display:none;" class="section-card">
       <h3 id="studynote-file-name"></h3>
       <div class="action-row"><button class="btn-primary" onclick="runStudynote()">📚 إنشاء مذكرة وأسئلة</button></div>
@@ -759,16 +761,16 @@
 <div class="page" id="page-ocr">
   <div class="tool-page">
     <div class="tool-header">
-      <span class="ai-badge">Tesseract.js</span>
+      <span class="ai-badge">AI · Gemini</span>
       <div class="tool-icon-lg" style="background:#eef2ff;color:#6366f1;">🔍</div>
-      <h1>استخراج نصوص OCR</h1><p>استخراج النصوص من الصور والملفات الممسوحة.</p>
+      <h1>استخراج نصوص OCR</h1><p>استخراج النصوص من الصور وملفات الـ PDF الممسوحة ضوئياً بدقة متناهية.</p>
     </div>
-    <div class="info-box">⚡ يعمل محلياً في المتصفح — لا يُرفع أي ملف.</div>
+    <div class="info-box" style="background:#edfaff;border-color:#bde5f8;color:#00529b;">⚡ معزز بنموذج Gemini 3.5 لضمان دقة متناهية غير مسبوقة ودعم كامل للغة العربية.</div>
     <div class="drop-zone" onclick="document.getElementById('ocr-input').click()" id="ocr-dz">
-      <input type="file" id="ocr-input" accept="image/*" onchange="handleOcrFile(this.files[0])">
+      <input type="file" id="ocr-input" accept="image/*,application/pdf" onchange="handleOcrFile(this.files[0])">
       <div class="drop-icon">🔍</div>
-      <h3>ارفع صورة لاستخراج النص</h3>
-      <p>PNG, JPG, WEBP — يدعم العربية والإنجليزية</p>
+      <h3>ارفع صورة أو ملف PDF لاستخراج النص</h3>
+      <p>PNG, JPG, WEBP, PDF — يدعم اللغة العربية بكفاءة عالية</p>
     </div>
     <div id="ocr-result"></div>
   </div>
@@ -786,6 +788,7 @@
       <input type="file" id="chat-input" accept="application/pdf" onchange="handleChatFile(this.files[0])">
       <div class="drop-icon">💬</div><h3>ارفع ملف PDF وابدأ الدردشة</h3>
     </div>
+    <div class="recent-files-container" data-tool="chat"></div>
     <div id="chat-area" style="display:none;" class="section-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <h3 id="chat-file-name" style="font-size:14px;color:var(--muted);"></h3>
@@ -812,6 +815,7 @@
       <input type="file" id="tr-input" accept="application/pdf" onchange="handleTrFile(this.files[0])">
       <div class="drop-icon">🌐</div><h3>ارفع ملف PDF للترجمة</h3>
     </div>
+    <div class="recent-files-container" data-tool="translate"></div>
     <div id="tr-options" style="display:none;" class="section-card">
       <h3 id="tr-file-name"></h3>
       <div class="form-group" style="margin-top:12px;">
@@ -847,6 +851,7 @@
           <h3 style="font-size:14px;">الملف الأول</h3>
           <p id="cmp-name1" style="color:var(--blue);font-size:12px;margin-top:6px;"></p>
         </div>
+        <div class="recent-files-container" data-tool="compare1"></div>
       </div>
       <div>
         <div class="drop-zone" onclick="document.getElementById('cmp-input2').click()" style="padding:30px 20px;">
@@ -855,6 +860,7 @@
           <h3 style="font-size:14px;">الملف الثاني</h3>
           <p id="cmp-name2" style="color:var(--blue);font-size:12px;margin-top:6px;"></p>
         </div>
+        <div class="recent-files-container" data-tool="compare2"></div>
       </div>
     </div>
     <div class="action-row" id="cmp-action" style="display:none;">
@@ -922,6 +928,165 @@ let orgFile=null,orgPages=[];
 let sumFile=null,chatFile=null,chatHistory=[],chatPdfText='';
 let trFile=null,cmpFile1=null,cmpFile2=null;
 
+// ===================== PDF PROCESSED CACHE =====================
+function saveToPdfCache(name, size, text) {
+  try {
+    const maxEntries = 10;
+    let cache = [];
+    try {
+      cache = JSON.parse(localStorage.getItem('pdf_processed_cache') || '[]');
+    } catch (e) {
+      cache = [];
+    }
+    
+    // Remove if already exists with same name and size
+    cache = cache.filter(item => !(item.name === name && item.size === size));
+    
+    // Add new entry
+    cache.unshift({
+      name: name,
+      size: size,
+      text: text,
+      timestamp: Date.now()
+    });
+    
+    // Keep only last maxEntries
+    if (cache.length > maxEntries) {
+      cache = cache.slice(0, maxEntries);
+    }
+    
+    // Try to save to localStorage
+    let success = false;
+    let attempts = 0;
+    while (!success && attempts < 5) {
+      try {
+        localStorage.setItem('pdf_processed_cache', JSON.stringify(cache));
+        success = true;
+      } catch (e) {
+        // QuotaExceededError - pop oldest from cache
+        if (cache.length > 1) {
+          cache.pop();
+          attempts++;
+        } else {
+          break;
+        }
+      }
+    }
+    
+    renderRecentFilesLists();
+  } catch (err) {
+    console.error('Error saving to PDF cache:', err);
+  }
+}
+
+function selectRecentFile(index, tool) {
+  try {
+    const cache = JSON.parse(localStorage.getItem('pdf_processed_cache') || '[]');
+    const fileItem = cache[index];
+    if (!fileItem) return;
+    
+    showToast(`📂 تم تحميل: ${fileItem.name} من الذاكرة المؤقتة`);
+    
+    if (tool === 'summarize') {
+       window._activeSumCachedText = fileItem.text;
+       sumFile = { name: fileItem.name, size: fileItem.size };
+       if (window.saveFileHistory) window.saveFileHistory(fileItem.name, 'أداة التلخيص الذكي');
+       document.getElementById('sum-file-name').textContent = '📄 ' + fileItem.name + ' (مخزن مؤقتاً)';
+       document.getElementById('sum-file-info').style.display = 'block';
+       document.getElementById('sum-dz').style.display = 'none';
+    } 
+    else if (tool === 'studynote') {
+       window._activeStudynoteCachedText = fileItem.text;
+       studynoteFile = { name: fileItem.name, size: fileItem.size };
+       if (window.saveFileHistory) window.saveFileHistory(fileItem.name, 'مذكرة من كتاب');
+       document.getElementById('studynote-file-name').textContent = '📄 ' + fileItem.name + ' (مخزن مؤقتاً)';
+       document.getElementById('studynote-file-info').style.display = 'block';
+       document.getElementById('studynote-dz').style.display = 'none';
+    } 
+    else if (tool === 'chat') {
+       chatFile = { name: fileItem.name, size: fileItem.size };
+       chatHistory = [];
+       chatPdfText = fileItem.text;
+       if (window.saveFileHistory) window.saveFileHistory(fileItem.name, 'تحدث مع PDF');
+       document.getElementById('chat-dz').style.display = 'none';
+       document.getElementById('chat-area').style.display = 'block';
+       document.getElementById('chat-file-name').textContent = '📄 ' + fileItem.name + ' (مخزن مؤقتاً)';
+       document.getElementById('chat-messages').innerHTML = `<div class="chat-msg ai">مرحباً! تم تحميل <strong>${fileItem.name}</strong> مباشرةً من التخزين المؤقت في جهازك. اسألني أي سؤال عنه بدون الحاجة لرفعه.</div>`;
+    } 
+    else if (tool === 'translate') {
+       window._activeTrCachedText = fileItem.text;
+       trFile = { name: fileItem.name, size: fileItem.size };
+       if (window.saveFileHistory) window.saveFileHistory(fileItem.name, 'ترجمة فورية');
+       document.getElementById('tr-file-name').textContent = '📄 ' + fileItem.name + ' (مخزن مؤقتاً)';
+       document.getElementById('tr-options').style.display = 'block';
+       document.getElementById('tr-dz').style.display = 'none';
+    } 
+    else if (tool === 'compare1') {
+       window._activeCmp1CachedText = fileItem.text;
+       cmpFile1 = { name: fileItem.name, size: fileItem.size };
+       if (window.saveFileHistory) window.saveFileHistory(fileItem.name, 'مقارنة الملفات');
+       document.getElementById('cmp-name1').textContent = '✅ ' + fileItem.name + ' (مخزن مؤقتاً)';
+       if (cmpFile1 && cmpFile2) document.getElementById('cmp-action').style.display = 'flex';
+    } 
+    else if (tool === 'compare2') {
+       window._activeCmp2CachedText = fileItem.text;
+       cmpFile2 = { name: fileItem.name, size: fileItem.size };
+       if (window.saveFileHistory) window.saveFileHistory(fileItem.name, 'مقارنة الملفات');
+       document.getElementById('cmp-name2').textContent = '✅ ' + fileItem.name + ' (مخزن مؤقتاً)';
+       if (cmpFile1 && cmpFile2) document.getElementById('cmp-action').style.display = 'flex';
+    }
+  } catch (e) {
+    console.error('Error selecting recent file:', e);
+  }
+}
+
+function renderRecentFilesLists() {
+  try {
+    const cache = JSON.parse(localStorage.getItem('pdf_processed_cache') || '[]');
+    const containers = document.querySelectorAll('.recent-files-container');
+    
+    containers.forEach(container => {
+      const tool = container.getAttribute('data-tool');
+      if (!tool) return;
+      
+      if (cache.length === 0) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+        return;
+      }
+      
+      container.style.display = 'block';
+      
+      let html = `
+        <div style="margin-top: 15px; direction: rtl; text-align: right;">
+          <p style="font-size: 11px; font-weight: bold; color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
+            🕒 ملفات معالجة مؤخراً (تحميل سريع):
+          </p>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      `;
+      
+      cache.forEach((item, idx) => {
+        const formattedSize = (item.size / 1024).toFixed(1) + ' KB';
+        html += `
+          <button type="button" class="icon-btn" style="padding: 5px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; color: var(--text); font-weight: 500;" onclick="selectRecentFile(${idx}, '${tool}')">
+            <span>📄</span>
+            <span style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.name}">${item.name}</span>
+            <span style="font-size: 8px; opacity: 0.6;">(${formattedSize})</span>
+          </button>
+        `;
+      });
+      
+      html += `
+          </div>
+        </div>
+      `;
+      container.innerHTML = html;
+    });
+  } catch (e) {
+    console.error('Error rendering recent files list:', e);
+  }
+}
+
 // Viewer State
 let viewPdfDoc=null,viewCurrentPage=1,viewScale=1.2;
 // Image to PDF State
@@ -938,6 +1103,9 @@ function goPage(id){
   if(pg)pg.classList.add('active');
   window.scrollTo(0,0);
   if(id === 'history') renderHistory();
+  if(['summarize', 'studynote', 'chat', 'translate', 'compare'].includes(id)) {
+    renderRecentFilesLists();
+  }
 }
 function toggleNavMenu(){
   var t=document.getElementById('navToggle'),d=document.getElementById('navDropdown');
@@ -1737,6 +1905,23 @@ async function callGemini(prompt, maxTokens=2000) {
 }
 
 async function extractPdfText(file,maxChars=12000){
+  if (file && file.name && file.size) {
+    try {
+      const cache = JSON.parse(localStorage.getItem('pdf_processed_cache') || '[]');
+      const match = cache.find(item => item.name === file.name && item.size === file.size);
+      if (match) {
+        console.log('[Cache Hit] Found processed PDF text in LocalStorage:', file.name);
+        return match.text.substring(0, maxChars);
+      }
+    } catch (e) {
+      console.warn('Error reading PDF cache:', e);
+    }
+  }
+
+  if (file && typeof file.arrayBuffer !== 'function') {
+    throw new Error('يرجى إعادة اختيار أو رفع ملف PDF الفعلي لأن النسخة المؤقتة غير متوفرة حالياً.');
+  }
+
   if(!window.pdfjsLib){
     await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
     window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
@@ -1750,7 +1935,12 @@ async function extractPdfText(file,maxChars=12000){
   }).promise;
   let text='';
   for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(item=>item.str).join(' ')+'\n';if(text.length>=maxChars)break;}
-  return text.trim().substring(0,maxChars);
+  
+  const extracted = text.trim().substring(0,maxChars);
+  if (file && file.name && file.size && extracted) {
+    saveToPdfCache(file.name, file.size, extracted);
+  }
+  return extracted;
 }
 
 // ===================== SUMMARIZE =====================
@@ -1813,13 +2003,53 @@ async function handleOcrFile(file){
   if(!file)return;
   if(window.saveFileHistory) window.saveFileHistory(file.name, 'استخراج نصوص OCR');
   document.getElementById('ocr-dz').style.display='none';
-  document.getElementById('ocr-result').innerHTML='<div class="ai-loading"><div class="spinner"></div><p>جاري التحميل...</p></div>';
-  try{
-    if(!window.Tesseract){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';document.head.appendChild(s);await new Promise((res,rej)=>{s.onload=res;s.onerror=rej;});}
-    const worker=await Tesseract.createWorker(['ara','eng'],1,{logger:m=>{if(m.status==='recognizing text')document.querySelector('#ocr-result p').textContent=`جاري المعالجة: ${Math.round(m.progress*100)}%`;}});
-    const{data:{text}}=await worker.recognize(file);await worker.terminate();
-    document.getElementById('ocr-result').innerHTML=`<div class="section-card" style="margin-top:16px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3>📝 النص المستخرج</h3><button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="copyText('ocr-text')">📋 نسخ</button></div><div class="ai-result-box" id="ocr-text">${text||'لم يتم العثور على نص'}</div></div>`;
-  }catch(e){document.getElementById('ocr-result').innerHTML=`<div class="info-box" style="color:#ef4444;">❌ ${e.message}</div>`;document.getElementById('ocr-dz').style.display='block';}
+  document.getElementById('ocr-result').innerHTML='<div class="ai-loading"><div class="spinner"></div><p>جاري استخراج النصوص من المستند بواسطة الذكاء الاصطناعي (Gemini)... قد يستغرق ذلك بضع ثوانٍ</p></div>';
+  
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await fetch('/api/ocr', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'فشلت عملية استخراج النصوص.');
+    }
+    
+    const result = await response.json();
+    const text = result.text || '';
+    
+    document.getElementById('ocr-result').innerHTML=`
+      <div class="section-card" style="margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3>📝 النص المستخرج</h3>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="copyText('ocr-text')">📋 نسخ</button>
+            <button class="btn-primary" style="padding:6px 12px;font-size:12px;background:var(--muted);" onclick="resetOcr()">🔄 رفع ملف آخر</button>
+          </div>
+        </div>
+        <div class="ai-result-box" id="ocr-text">${text ? text.replace(/\n/g,'<br>') : 'لم نتمكن من العثور على أي نصوص في هذا الملف.'}</div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('ocr-result').innerHTML=`
+      <div class="info-box" style="color:#ef4444;border-color:#fca5a5;background:#fef2f2;">
+        ❌ حدث خطأ: ${e.message}
+        <div style="margin-top:10px;">
+          <button class="btn-primary" style="font-size:11px;padding:4px 8px;" onclick="resetOcr()">إعادة المحاولة / رفع ملف آخر</button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function resetOcr() {
+  document.getElementById('ocr-input').value = '';
+  document.getElementById('ocr-dz').style.display = 'block';
+  document.getElementById('ocr-result').innerHTML = '';
 }
 
 // ===================== CHAT =====================
