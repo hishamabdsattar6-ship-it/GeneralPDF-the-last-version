@@ -11,7 +11,6 @@ import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { getGemini, handleGeminiError } from './src/lib/gemini.js';
 import { validateAiPrompt } from './lib/validators.js';
-
 import { extractTextPipeline } from './src/lib/pdfPipeline.js';
 import { vectorizeAndStore } from './src/lib/ragVectorStore.js';
 import { answerQuestionWithRAG } from './src/lib/geminiCaching.js';
@@ -19,11 +18,11 @@ import { upsertUser, getUserById, User, saveFileHistory, getFileHistory } from '
 
 const app = express();
 
-const uploadDir = path.join(process.cwd(), 'uploads');
+const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
-const upload = multer({ dest: 'uploads/' }); // multer configuration
+const upload = multer({ dest: uploadDir }); // multer configuration
 
 
 const ALLOWED_ORIGINS = [
