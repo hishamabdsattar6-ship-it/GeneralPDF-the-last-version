@@ -8,17 +8,31 @@ export const GoogleLoginButton: React.FC = () => {
   const [clientId, setClientId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch google client id from server config
+    // 1. Try VITE environment variable first (for Vercel/Static deployments)
+    const viteClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (viteClientId) {
+      setClientId(viteClientId);
+      return;
+    }
+
+    // 2. Fetch from server config (for full-stack Express deployments)
     fetch('/api/config')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('API route /api/config returned ' + res.status);
+        return res.json();
+      })
       .then((data) => {
         if (data.googleClientId) {
           setClientId(data.googleClientId);
         } else {
           console.warn("Google Client ID is missing.");
+          setError('لم يتم العثور على Google Client ID في الإعدادات.');
         }
       })
-      .catch((err) => console.error("Failed to load Google Config", err));
+      .catch((err) => {
+        console.error("Failed to load Google Config", err);
+        setError('تعذر جلب إعدادات Google. إذا كنت تستخدم Vercel، تأكد من إضافة VITE_GOOGLE_CLIENT_ID إلى بيئة Vercel.');
+      });
   }, []);
 
   useEffect(() => {
@@ -192,30 +206,6 @@ export const GoogleLoginButton: React.FC = () => {
           {error}
         </div>
       )}
-
-      {/* Exquisite design instructions for fixing redirect_uri_mismatch */}
-      <div 
-        className="text-right p-3.5 bg-slate-50 border border-slate-200 rounded-xl max-w-md w-full"
-        style={{ direction: 'rtl', fontSize: '12px', lineHeight: '1.6' }}
-      >
-        <div className="flex items-center gap-1.5 font-bold text-slate-700 mb-1.5">
-          <span>🛠️ حل مشكلة <b>رابط إعادة التوجيه (redirect_uri_mismatch)</b>:</span>
-        </div>
-        <p className="text-slate-500 mb-2.5">
-          يتطلب تسجيل الدخول عبر Google إضافة رابط هذا التطبيق التجريبي في لوحة المطورين الخاصة بك:
-        </p>
-        <div className="space-y-2">
-          <div>
-            <span className="block text-slate-400 font-semibold mb-1">الرابط المطلوب إضافته (الموقع الحالي):</span>
-            <div className="flex items-center gap-1 bg-white p-2 rounded border border-slate-200 select-all font-mono text-[11px] text-blue-600 break-all">
-              {currentRedirectUri}
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">
-            📍 انسخ الرابط أعلاه وضعه في <b>Authorized redirect URIs</b> في <b>Google Cloud Console</b> لحل التعليق فورا.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

@@ -409,4 +409,9 @@ async function startServer() {
   
   app.listen(3000, '0.0.0.0', () => console.log('Server running on 3000'));
 }
-startServer();
+
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
