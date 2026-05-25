@@ -16,11 +16,11 @@ import { vectorizeAndStore } from './src/lib/ragVectorStore.js';
 import { answerQuestionWithRAG } from './src/lib/geminiCaching.js';
 import { upsertUser, getUserById, saveFileHistory, getFileHistory } from './src/lib/db.js';
 const app = express();
-const uploadDir = path.join(process.cwd(), 'uploads');
+const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
-const upload = multer({ dest: 'uploads/' }); // multer configuration
+const upload = multer({ dest: uploadDir }); // multer configuration
 const ALLOWED_ORIGINS = [
     'https://your-domain.vercel.app',
     'http://localhost:3000',
@@ -28,11 +28,11 @@ const ALLOWED_ORIGINS = [
 ];
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.includes('run.app')) {
+        if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.includes('run.app') || origin.endsWith('.vercel.app')) {
             callback(null, true);
         }
         else {
-            callback(new Error('CORS غير مسموح'));
+            callback(new Error('CORS غير مسموح: ' + origin));
         }
     }
 }));
@@ -99,7 +99,7 @@ app.post('/api/gemini', async (req, res) => {
         const cleanPrompt = validateAiPrompt(prompt);
         const ai = getGemini();
         const result = await ai.models.generateContent({
-            model: "gemini-3.5-flash",
+            model: "gemini-2.5-flash",
             contents: [{ role: 'user', parts: [{ text: cleanPrompt }] }],
             config: {
                 maxOutputTokens: 8192,
@@ -133,7 +133,7 @@ app.post('/api/ocr', upload.single('file'), async (req, res) => {
             const base64Data = dataBuffer.toString('base64');
             const ai = getGemini();
             const result = await ai.models.generateContent({
-                model: 'gemini-3.5-flash',
+                model: 'gemini-2.5-flash',
                 contents: [
                     {
                         inlineData: {
@@ -361,4 +361,7 @@ async function startServer() {
     }
     app.listen(3000, '0.0.0.0', () => console.log('Server running on 3000'));
 }
-startServer();
+if (!process.env.VERCEL) {
+    startServer();
+}
+export default app;

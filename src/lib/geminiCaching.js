@@ -12,7 +12,7 @@ export async function createDocumentCache(documentText, displayName = 'Large-Doc
     const ai = getGemini();
     const ttlSeconds = 60 * 60;
     const cache = await ai.caches.create({
-        model: 'gemini-3.5-flash',
+        model: 'gemini-2.5-flash',
         config: {
             displayName: displayName,
             ttl: `${ttlSeconds}s`,
@@ -30,7 +30,7 @@ export async function createDocumentCache(documentText, displayName = 'Large-Doc
 export async function askQuestionWithCache(cacheName, question) {
     const ai = getGemini();
     const result = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
+        model: 'gemini-2.5-flash',
         contents: question,
         config: {
             cachedContent: cacheName
@@ -64,7 +64,7 @@ ${relevantContext}
 ${question}`;
     const ai = getGemini();
     const result = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
+        model: 'gemini-2.5-flash',
         contents: prompt
     });
     return result.text || '';

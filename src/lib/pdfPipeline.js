@@ -226,9 +226,9 @@ export async function processScannedPdfWithGemini(filePath, mimeType = 'applicat
         const dataBuffer = fs.readFileSync(filePath);
         const base64Data = dataBuffer.toString('base64');
         const ai = getGemini();
-        // استخدام نموذج gemini-3.5-flash السريع جداً والرخيص لاستخراج النص بدقة (OCR)
+        // استخدام نموذج gemini-2.5-flash السريع جداً والرخيص لاستخراج النص بدقة (OCR)
         const result = await ai.models.generateContent({
-            model: 'gemini-3.5-flash',
+            model: 'gemini-2.5-flash',
             contents: [
                 {
                     inlineData: {

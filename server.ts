@@ -26,22 +26,11 @@ const upload = multer({ dest: uploadDir }); // multer configuration
 
 
 const ALLOWED_ORIGINS = [
-  'https://your-domain.vercel.app', 
-  'http://localhost:3000',
-  process.env.VITE_APP_URL || '' // assuming dynamic origins can be added here
+  process.env.VITE_APP_URL || '' // dynamic origins
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.includes('run.app') || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS غير مسموح: ' + origin));
-    }
-  }
-}));
-
-app.use(express.json({ limit: '1mb' })); // Limit body size to 1MB
+app.use(cors({ origin: true })); // Allow any origin, or trust frontend
+app.use(express.json({ limit: '50mb' })); // Allow body parsing with large limit for docs
 app.use(cookieParser());
 
 // 1. Security Headers
@@ -119,7 +108,7 @@ app.post('/api/gemini', async (req, res) => {
     const ai = getGemini();
 
     const result = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: [{ role: 'user', parts: [{ text: cleanPrompt }] }],
       config: {
         maxOutputTokens: 8192,
@@ -156,7 +145,7 @@ app.post('/api/ocr', upload.single('file'), async (req, res) => {
       const ai = getGemini();
 
       const result = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
+        model: 'gemini-2.5-flash',
         contents: [
           {
             inlineData: {

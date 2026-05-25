@@ -58,7 +58,7 @@ const AuthComponent = () => {
   }, [user]);
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4 whitespace-nowrap flex-shrink-0">
       {isLoading ? (
         <span className="text-sm text-gray-500">جاري التحقق...</span>
       ) : user ? (
@@ -94,6 +94,40 @@ const init = () => {
   mountTemplates();
   mountForms();
   mountAuth();
+  
+  // Lazy loading for images
+  const applyLazyLoading = () => {
+    document.querySelectorAll('img').forEach(img => {
+      if (!img.hasAttribute('loading')) {
+        img.setAttribute('loading', 'lazy');
+      }
+    });
+  };
+  applyLazyLoading();
+  const observer = new MutationObserver(applyLazyLoading);
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // JS Device Detection
+  const updateDeviceClass = () => {
+    const width = window.innerWidth;
+    let deviceType = '';
+    
+    if (width < 768) {
+      deviceType = 'device-mobile';
+    } else if (width >= 768 && width < 1024) {
+      deviceType = 'device-tablet';
+    } else if (width >= 1024 && width < 1440) {
+      deviceType = 'device-laptop';
+    } else {
+      deviceType = 'device-desktop';
+    }
+    
+    document.body.classList.remove('device-mobile', 'device-tablet', 'device-laptop', 'device-desktop');
+    document.body.classList.add(deviceType);
+  };
+  
+  window.addEventListener('resize', updateDeviceClass);
+  updateDeviceClass();
 };
 
 if (document.readyState === 'loading') {

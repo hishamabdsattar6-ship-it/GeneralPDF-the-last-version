@@ -24,7 +24,10 @@
   html{background:var(--bg);color:var(--text);transition:background .3s;scroll-behavior:smooth}
   body{font-family:'Tajawal','Cairo',sans-serif;min-height:100vh;display:flex;flex-direction:column}
   html[lang="en"] body{font-family:'Inter',sans-serif}
-  header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--header) 90%,transparent);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;flex-direction:row-reverse;gap:10px;box-shadow:0 1px 8px rgba(0,0,0,.05)}
+  
+  header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--header) 90%,transparent);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;flex-direction:row-reverse;gap:10px;box-shadow:0 1px 8px rgba(0,0,0,.05); overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; justify-content: flex-start; white-space: nowrap; flex-wrap: nowrap;}
+  header::-webkit-scrollbar { display: none; }
+  
   .logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0;margin-right:auto}
   .logo-icon{width:36px;height:36px;border-radius:10px;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;box-shadow:0 3px 10px rgba(29,78,216,.3);transition:transform .2s}
   .logo:hover .logo-icon{transform:scale(1.08)}
@@ -33,11 +36,13 @@
   .icon-btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 11px;border-radius:10px;border:1px solid var(--border);background:var(--card);cursor:pointer;color:var(--muted);font-size:12px;font-weight:700;transition:background .2s,color .2s,border-color .2s;white-space:nowrap}
   .icon-btn:hover{border-color:var(--blue);color:var(--blue)}
   nav{position:relative;flex-shrink:0}
-  .nav-toggle{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;transition:border-color .2s,color .2s;white-space:nowrap}
+  .nav-toggle{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;transition:border-color .2s,color .2s;white-space:nowrap;flex-shrink:0;}
   .nav-toggle:hover,.nav-toggle.open{border-color:var(--blue);color:var(--blue)}
   .nav-toggle .chevron{transition:transform .22s}
   .nav-toggle.open .chevron{transform:rotate(180deg)}
-  .nav-dropdown{display:none;flex-direction:column;gap:2px;position:absolute;top:calc(100% + 8px);right:0;min-width:190px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.13);z-index:999}
+  /* Fixed dropdown relative to viewport to prevent header overflow clipping */
+  .nav-dropdown{display:none;flex-direction:column;gap:2px;position:fixed;top:64px;left:auto;right:16px;min-width:200px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.13);z-index:999;max-height:calc(100vh - 80px);overflow-y:auto;}
+  html[dir="ltr"] .nav-dropdown { right: auto; left: 16px; }
   .nav-dropdown.open{display:flex;animation:dropIn .18s ease}
   @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
   .nav-link{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;cursor:pointer;border:none;background:transparent;transition:background .15s,color .15s;width:100%}
@@ -49,8 +54,67 @@
   @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
   .grid12{display:grid;grid-template-columns:repeat(12,1fr);gap:20px}
-  @media(max-width:900px){.grid3{grid-template-columns:repeat(2,1fr)}}
-  @media(max-width:600px){.grid3{grid-template-columns:1fr}.grid12{grid-template-columns:1fr}}
+  
+  /* ================= RESPONSIVE LAYOUTS ================= */
+  
+  /* Typography & Defaults */
+  body, p, label, .card p { font-size: clamp(14px, 2vw, 16px); }
+  h1, .page-title h1, .tool-header h1 { font-size: clamp(24px, 5vw, 36px) !important; }
+  h2, .hero-banner h2 { font-size: clamp(20px, 4vw, 30px) !important; }
+  h3, .card h3 { font-size: clamp(16px, 3vw, 20px) !important; }
+  img, video, canvas { max-width: 100%; height: auto; }
+  
+  @media (max-width: 767px) {
+    /* Mobile (< 768px) */
+    .grid3 { grid-template-columns: 1fr; gap: 16px; }
+    .grid12 { grid-template-columns: 1fr; }
+    .hero-banner { grid-column: span 1; padding: 24px; text-align: center; }
+    .stats-col { grid-column: span 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    main { padding: 20px 16px; }
+    .card, .stat-card, .section-card, .drop-zone { padding: 16px; }
+    /* Touch Target Min Size 44x44px */
+    .btn-primary, .btn-secondary, .btn-success, .btn-ai, .nav-link, .nav-toggle, .icon-btn, button { 
+      min-height: 44px; 
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-banner .btn-white { align-self: center; }
+    .mobile-hidden { display: none !important; }
+    .hero-blob { display: none; }
+    #navLabel { display: none; }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    /* Tablet (768px - 1023px) */
+    .grid3 { grid-template-columns: repeat(2, 1fr); }
+    .grid12 { grid-template-columns: repeat(12, 1fr); }
+    .hero-banner { grid-column: span 8; }
+    .stats-col { grid-column: span 4; }
+    main { padding: 30px 20px; }
+  }
+
+  @media (min-width: 1024px) {
+    /* Laptop & Desktop (>= 1024px) */
+    .grid3 { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  @media (min-width: 1440px) {
+    /* Large Desktop (> 1440px) */
+    main { max-width: 1400px; }
+    .grid3 { grid-template-columns: repeat(4, 1fr); }
+  }
+  
+  /* Hover effects only for fine pointers (Mouse) */
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-ai:hover { transform: translateY(-2px); }
+  }
+  
+  /* Touch state classes */
+  @media (hover: none) {
+    .btn-primary:active, .card:active { transform: scale(0.98); opacity: 0.9; }
+  }
+  /* ====================================================== */
   .card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,.04);transition:box-shadow .25s,border-color .25s,transform .25s;cursor:pointer;text-decoration:none;color:var(--text);display:flex;flex-direction:column}
   .card:hover{box-shadow:0 8px 30px rgba(0,0,0,.10);border-color:#93c5fd;transform:translateY(-2px)}
   .dark .card:hover{border-color:#1d4ed8}
@@ -209,23 +273,23 @@
       <span id="navLabel">القائمة</span>
       <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
-    <div class="nav-dropdown" id="navDropdown">
-      <button class="nav-link active" onclick="navGoPage('home')" data-page="home">🏠 <span>الرئيسية</span></button>
-      <button class="nav-link" onclick="navGoPage('tools')" data-page="tools">🖥️ <span>أدوات عادية</span></button>
-      <button class="nav-link" onclick="navGoPage('aitools')" data-page="aitools">🤖 <span>أدوات AI</span></button>
-      <button class="nav-link" onclick="navGoPage('organize')" data-page="organize">📋 <span>تنظيم</span></button>
-      <button class="nav-link" onclick="navGoPage('templates')" data-page="templates">📄 <span>القوالب</span></button>
-      <button class="nav-link" onclick="navGoPage('sign')" data-page="sign">✍️ <span>التوقيع</span></button>
-      <button class="nav-link" onclick="navGoPage('encryption')" data-page="encryption">🔒 <span>الحماية</span></button>
-      <button class="nav-link" onclick="navGoPage('history')" data-page="history">📜 <span>السجل</span></button>
-      <button class="nav-link" onclick="navGoPage('forms')" data-page="forms">📋 <span>النماذج</span></button>
-    </div>
   </nav>
   <a class="logo" onclick="goPage('home')" href="#">
     <div class="logo-icon">📄</div>
     <span class="logo-text" id="logoText">أدوات PDF الذكية</span>
   </a>
 </header>
+<div class="nav-dropdown" id="navDropdown">
+  <button class="nav-link active" onclick="navGoPage('home')" data-page="home">🏠 <span>الرئيسية</span></button>
+  <button class="nav-link" onclick="navGoPage('tools')" data-page="tools">🖥️ <span>أدوات عادية</span></button>
+  <button class="nav-link" onclick="navGoPage('aitools')" data-page="aitools">🤖 <span>أدوات AI</span></button>
+  <button class="nav-link" onclick="navGoPage('organize')" data-page="organize">📋 <span>تنظيم</span></button>
+  <button class="nav-link" onclick="navGoPage('templates')" data-page="templates">📄 <span>القوالب</span></button>
+  <button class="nav-link" onclick="navGoPage('sign')" data-page="sign">✍️ <span>التوقيع</span></button>
+  <button class="nav-link" onclick="navGoPage('encryption')" data-page="encryption">🔒 <span>الحماية</span></button>
+  <button class="nav-link" onclick="navGoPage('history')" data-page="history">📜 <span>السجل</span></button>
+  <button class="nav-link" onclick="navGoPage('forms')" data-page="forms">📋 <span>النماذج</span></button>
+</div>
 <main>
 <div class="page active" id="page-home">
   <div class="grid12" style="margin-bottom:20px;">
@@ -1120,8 +1184,9 @@ function navGoPage(page){
 }
 document.addEventListener('click',function(e){
   var nav=document.getElementById('mainNav');
-  if(nav&&!nav.contains(e.target)){
-    document.getElementById('navDropdown').classList.remove('open');
+  var dd=document.getElementById('navDropdown');
+  if(nav&&dd&&!nav.contains(e.target)&&!dd.contains(e.target)){
+    dd.classList.remove('open');
     document.getElementById('navToggle').classList.remove('open');
   }
 });
@@ -1885,11 +1950,6 @@ function exportTemplate(){
 }
 
 async function callGemini(prompt, maxTokens=2000) {
-  if (!window.currentUser) {
-    showToast('❌ يجب تسجيل الدخول عبر حساب جوجل أولاً');
-    throw new Error('غير مصرح - الرجاء تسجيل الدخول.');
-  }
-
   const res = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
