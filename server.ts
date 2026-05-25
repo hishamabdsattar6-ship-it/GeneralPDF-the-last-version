@@ -33,10 +33,10 @@ const ALLOWED_ORIGINS = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.includes('run.app')) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.includes('run.app') || origin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
-      callback(new Error('CORS غير مسموح'));
+      callback(new Error('CORS غير مسموح: ' + origin));
     }
   }
 }));
