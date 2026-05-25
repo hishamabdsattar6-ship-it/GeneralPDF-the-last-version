@@ -33,7 +33,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await fetch('/api/auth/me');
-      if (res.ok) {
+      const contentType = res.headers.get("content-type");
+      if (res.ok && contentType && contentType.indexOf("application/json") !== -1) {
         const data = await res.json();
         setUser(data.user);
       } else {

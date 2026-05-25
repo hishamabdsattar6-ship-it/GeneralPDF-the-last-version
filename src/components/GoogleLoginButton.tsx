@@ -18,7 +18,10 @@ export const GoogleLoginButton: React.FC = () => {
     // 2. Fetch from server config (for full-stack Express deployments)
     fetch('/api/config')
       .then((res) => {
-        if (!res.ok) throw new Error('API route /api/config returned ' + res.status);
+        const contentType = res.headers.get("content-type");
+        if (!res.ok || !contentType || contentType.indexOf("application/json") === -1) {
+             throw new Error('API route /api/config returned HTML or error ' + res.status);
+        }
         return res.json();
       })
       .then((data) => {
@@ -55,6 +58,12 @@ export const GoogleLoginButton: React.FC = () => {
             },
             body: JSON.stringify({ credential: idToken }),
           });
+
+          const contentType = res.headers.get("content-type");
+          if (!res.ok || !contentType || contentType.indexOf("application/json") === -1) {
+            setError('فشل الاتصال بالخادم. تأكد من إعدادات Vercel API.');
+            return;
+          }
 
           const data = await res.json();
 
